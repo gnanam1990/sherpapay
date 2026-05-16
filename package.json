@@ -20,6 +20,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\"",
     "dev:web": "turbo dev --filter=@sherpapay/web",
     "dev:api": "turbo dev --filter=@sherpapay/api",
+    "dev:worker": "turbo dev --filter=@sherpapay/worker",
     "dev:db": "turbo dev --filter=@sherpapay/memory",
     "deploy:testnet": "cd contracts && forge script script/DeployTestnet.s.sol --rpc-url alfajores --broadcast --verify",
     "deploy:mainnet": "cd contracts && forge script script/DeployMainnet.s.sol --rpc-url celo --broadcast --verify",
