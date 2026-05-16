@@ -7,9 +7,7 @@ import "../src/SherpaPayVault.sol";
 
 contract DeployTestnet is Script {
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
-
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast();
 
         SherpaPayScheduler scheduler = new SherpaPayScheduler();
         SherpaPayVault vault = new SherpaPayVault();
