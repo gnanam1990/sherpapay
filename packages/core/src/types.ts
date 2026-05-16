@@ -63,6 +63,7 @@ export interface Schedule {
   readonly recipient: string
   readonly token: TokenSymbol
   readonly amount: bigint
+  readonly remainingBalance: bigint
   readonly startTime: number
   readonly interval: number
   readonly endTime: number

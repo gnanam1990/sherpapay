@@ -27,6 +27,7 @@ contract SherpaPayScheduler is ReentrancyGuard {
         address recipient; // Where money goes
         address token; // cUSD, cEUR, USDT
         uint256 amount; // Per-execution amount (wei)
+        uint256 remainingBalance; // Escrow allocated to this schedule
         uint64 startTime; // First execution
         uint64 interval; // Seconds between executions
         uint64 endTime; // 0 = perpetual
@@ -59,13 +60,11 @@ contract SherpaPayScheduler is ReentrancyGuard {
         uint64 endTime
     );
 
-    event ExecutionSuccess(
-        bytes32 indexed id,
-        uint256 amount,
-        uint64 nextExecution
-    );
+    event ExecutionSuccess(bytes32 indexed id, uint256 amount, uint64 nextExecution);
 
     event ExecutionFailed(bytes32 indexed id, string reason);
+
+    event ScheduleFunded(bytes32 indexed id, uint256 amount, uint256 newBalance);
 
     event ScheduleCancelled(bytes32 indexed id);
 
@@ -142,22 +141,14 @@ contract SherpaPayScheduler is ReentrancyGuard {
         // Approve token transfer for the schedule
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
-        scheduleId = keccak256(
-            abi.encodePacked(
-                msg.sender,
-                recipient,
-                token,
-                amount,
-                startTime,
-                block.timestamp
-            )
-        );
+        scheduleId = keccak256(abi.encodePacked(msg.sender, recipient, token, amount, startTime, block.timestamp));
 
         schedules[scheduleId] = Schedule({
             sender: msg.sender,
             recipient: recipient,
             token: token,
             amount: amount,
+            remainingBalance: amount,
             startTime: startTime,
             interval: interval,
             endTime: endTime,
@@ -171,16 +162,25 @@ contract SherpaPayScheduler is ReentrancyGuard {
         userSchedules[msg.sender].push(scheduleId);
         allScheduleIds.push(scheduleId);
 
-        emit ScheduleCreated(
-            scheduleId,
-            msg.sender,
-            recipient,
-            token,
-            amount,
-            interval,
-            startTime,
-            endTime
-        );
+        emit ScheduleCreated(scheduleId, msg.sender, recipient, token, amount, interval, startTime, endTime);
+    }
+
+    /// @notice Add escrow to an existing schedule for future executions
+    /// @param scheduleId The schedule to fund
+    /// @param amount Amount to add to the schedule escrow
+    function fundSchedule(bytes32 scheduleId, uint256 amount)
+        external
+        nonReentrant
+        scheduleExists(scheduleId)
+        onlySender(scheduleId)
+    {
+        if (amount == 0) revert ZeroAmount();
+
+        Schedule storage schedule = schedules[scheduleId];
+        IERC20(schedule.token).safeTransferFrom(msg.sender, address(this), amount);
+        schedule.remainingBalance += amount;
+
+        emit ScheduleFunded(scheduleId, amount, schedule.remainingBalance);
     }
 
     /// @notice Execute a due payment
@@ -195,9 +195,7 @@ contract SherpaPayScheduler is ReentrancyGuard {
             return;
         }
 
-        // Check contract has enough tokens
-        uint256 balance = IERC20(schedule.token).balanceOf(address(this));
-        if (balance < schedule.amount) {
+        if (schedule.remainingBalance < schedule.amount) {
             schedule.currentFailures++;
             if (schedule.currentFailures >= schedule.maxFailures) {
                 schedule.status = ScheduleStatus.Paused;
@@ -207,6 +205,7 @@ contract SherpaPayScheduler is ReentrancyGuard {
         }
 
         // Execute transfer
+        schedule.remainingBalance -= schedule.amount;
         IERC20(schedule.token).safeTransfer(schedule.recipient, schedule.amount);
 
         // Update schedule state
@@ -232,12 +231,11 @@ contract SherpaPayScheduler is ReentrancyGuard {
             Schedule storage schedule = schedules[id];
 
             if (
-                schedule.status == ScheduleStatus.Active &&
-                block.timestamp >= schedule.nextExecution &&
-                (schedule.endTime == 0 || block.timestamp <= schedule.endTime)
+                schedule.status == ScheduleStatus.Active && block.timestamp >= schedule.nextExecution
+                    && (schedule.endTime == 0 || block.timestamp <= schedule.endTime)
             ) {
-                uint256 balance = IERC20(schedule.token).balanceOf(address(this));
-                if (balance >= schedule.amount) {
+                if (schedule.remainingBalance >= schedule.amount) {
+                    schedule.remainingBalance -= schedule.amount;
                     IERC20(schedule.token).safeTransfer(schedule.recipient, schedule.amount);
                     schedule.lastExecution = uint64(block.timestamp);
                     schedule.currentFailures = 0;
@@ -285,10 +283,10 @@ contract SherpaPayScheduler is ReentrancyGuard {
         Schedule storage schedule = schedules[scheduleId];
         schedule.status = ScheduleStatus.Cancelled;
 
-        // Refund remaining balance to sender
-        uint256 balance = IERC20(schedule.token).balanceOf(address(this));
-        if (balance > 0) {
-            IERC20(schedule.token).safeTransfer(schedule.sender, balance);
+        uint256 refundAmount = schedule.remainingBalance;
+        schedule.remainingBalance = 0;
+        if (refundAmount > 0) {
+            IERC20(schedule.token).safeTransfer(schedule.sender, refundAmount);
         }
 
         emit ScheduleCancelled(scheduleId);
@@ -330,9 +328,8 @@ contract SherpaPayScheduler is ReentrancyGuard {
         for (uint256 i = 0; i < allScheduleIds.length && dueCount < limit; i++) {
             Schedule storage s = schedules[allScheduleIds[i]];
             if (
-                s.status == ScheduleStatus.Active &&
-                block.timestamp >= s.nextExecution &&
-                (s.endTime == 0 || block.timestamp <= s.endTime)
+                s.status == ScheduleStatus.Active && block.timestamp >= s.nextExecution
+                    && (s.endTime == 0 || block.timestamp <= s.endTime)
             ) {
                 temp[dueCount++] = allScheduleIds[i];
             }

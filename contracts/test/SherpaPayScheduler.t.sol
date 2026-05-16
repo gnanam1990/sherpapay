@@ -30,10 +30,8 @@ contract SherpaPaySchedulerTest is Test {
         scheduler = new SherpaPayScheduler();
         token = new MockERC20("Test Token", "TT");
 
-        // Fund alice
         token.transfer(alice, 100_000e18);
-        // Fund scheduler for execution
-        token.transfer(address(scheduler), 50_000e18);
+        token.transfer(bob, 100_000e18);
     }
 
     function testSchedulePayment() public {
@@ -41,13 +39,7 @@ contract SherpaPaySchedulerTest is Test {
         token.approve(address(scheduler), 1000e18);
 
         bytes32 id = scheduler.schedulePayment(
-            bob,
-            address(token),
-            100e18,
-            uint64(block.timestamp + 1 hours),
-            INTERVAL,
-            0,
-            MAX_FAILURES
+            bob, address(token), 100e18, uint64(block.timestamp + 1 hours), INTERVAL, 0, MAX_FAILURES
         );
 
         SherpaPayScheduler.Schedule memory schedule = scheduler.getSchedule(id);
@@ -55,7 +47,39 @@ contract SherpaPaySchedulerTest is Test {
         assertEq(schedule.recipient, bob);
         assertEq(schedule.token, address(token));
         assertEq(schedule.amount, 100e18);
+        assertEq(schedule.remainingBalance, 100e18);
         assertEq(uint8(schedule.status), uint8(SherpaPayScheduler.ScheduleStatus.Active));
+        vm.stopPrank();
+    }
+
+    function testFundSchedule() public {
+        vm.startPrank(alice);
+        token.approve(address(scheduler), 1000e18);
+
+        bytes32 id = scheduler.schedulePayment(
+            bob, address(token), 100e18, uint64(block.timestamp + 1 hours), INTERVAL, 0, MAX_FAILURES
+        );
+
+        scheduler.fundSchedule(id, 300e18);
+
+        SherpaPayScheduler.Schedule memory schedule = scheduler.getSchedule(id);
+        assertEq(schedule.remainingBalance, 400e18);
+        assertEq(token.balanceOf(address(scheduler)), 400e18);
+        vm.stopPrank();
+    }
+
+    function testFundScheduleRejectsUnauthorizedSender() public {
+        vm.startPrank(alice);
+        token.approve(address(scheduler), 1000e18);
+        bytes32 id = scheduler.schedulePayment(
+            bob, address(token), 100e18, uint64(block.timestamp + 1 hours), INTERVAL, 0, MAX_FAILURES
+        );
+        vm.stopPrank();
+
+        vm.startPrank(bob);
+        token.approve(address(scheduler), 100e18);
+        vm.expectRevert(SherpaPayScheduler.Unauthorized.selector);
+        scheduler.fundSchedule(id, 100e18);
         vm.stopPrank();
     }
 
@@ -64,15 +88,7 @@ contract SherpaPaySchedulerTest is Test {
         token.approve(address(scheduler), 1000e18);
 
         uint64 startTime = uint64(block.timestamp + 1 hours);
-        bytes32 id = scheduler.schedulePayment(
-            bob,
-            address(token),
-            100e18,
-            startTime,
-            INTERVAL,
-            0,
-            MAX_FAILURES
-        );
+        bytes32 id = scheduler.schedulePayment(bob, address(token), 100e18, startTime, INTERVAL, 0, MAX_FAILURES);
         vm.stopPrank();
 
         // Fast forward to execution time
@@ -87,6 +103,7 @@ contract SherpaPaySchedulerTest is Test {
         SherpaPayScheduler.Schedule memory schedule = scheduler.getSchedule(id);
         assertEq(schedule.lastExecution, startTime);
         assertEq(schedule.nextExecution, startTime + INTERVAL);
+        assertEq(schedule.remainingBalance, 0);
     }
 
     function testExecuteBatch() public {
@@ -109,13 +126,16 @@ contract SherpaPaySchedulerTest is Test {
         uint256 bobAfter = token.balanceOf(bob);
 
         assertEq(bobAfter - bobBefore, 125e18);
+        assertEq(scheduler.getSchedule(id1).remainingBalance, 0);
+        assertEq(scheduler.getSchedule(id2).remainingBalance, 0);
     }
 
     function testPauseAndResume() public {
         vm.startPrank(alice);
         token.approve(address(scheduler), 1000e18);
 
-        bytes32 id = scheduler.schedulePayment(bob, address(token), 100e18, uint64(block.timestamp), INTERVAL, 0, MAX_FAILURES);
+        bytes32 id =
+            scheduler.schedulePayment(bob, address(token), 100e18, uint64(block.timestamp), INTERVAL, 0, MAX_FAILURES);
 
         scheduler.pauseSchedule(id);
         assertEq(uint8(scheduler.getSchedule(id).status), uint8(SherpaPayScheduler.ScheduleStatus.Paused));
@@ -129,11 +149,44 @@ contract SherpaPaySchedulerTest is Test {
         vm.startPrank(alice);
         token.approve(address(scheduler), 1000e18);
 
-        bytes32 id = scheduler.schedulePayment(bob, address(token), 100e18, uint64(block.timestamp), INTERVAL, 0, MAX_FAILURES);
+        bytes32 id =
+            scheduler.schedulePayment(bob, address(token), 100e18, uint64(block.timestamp), INTERVAL, 0, MAX_FAILURES);
 
         scheduler.cancelSchedule(id);
-        assertEq(uint8(scheduler.getSchedule(id).status), uint8(SherpaPayScheduler.ScheduleStatus.Cancelled));
+        SherpaPayScheduler.Schedule memory schedule = scheduler.getSchedule(id);
+        assertEq(uint8(schedule.status), uint8(SherpaPayScheduler.ScheduleStatus.Cancelled));
+        assertEq(schedule.remainingBalance, 0);
         vm.stopPrank();
+    }
+
+    function testCancelScheduleRefundsOnlyItsOwnEscrow() public {
+        vm.startPrank(alice);
+        token.approve(address(scheduler), 1000e18);
+        bytes32 aliceSchedule = scheduler.schedulePayment(
+            worker, address(token), 100e18, uint64(block.timestamp), INTERVAL, 0, MAX_FAILURES
+        );
+        vm.stopPrank();
+
+        vm.startPrank(bob);
+        token.approve(address(scheduler), 1000e18);
+        bytes32 bobSchedule = scheduler.schedulePayment(
+            worker, address(token), 200e18, uint64(block.timestamp), INTERVAL, 0, MAX_FAILURES
+        );
+        vm.stopPrank();
+
+        uint256 aliceBefore = token.balanceOf(alice);
+        vm.prank(alice);
+        scheduler.cancelSchedule(aliceSchedule);
+
+        assertEq(token.balanceOf(alice) - aliceBefore, 100e18);
+        assertEq(token.balanceOf(address(scheduler)), 200e18);
+        assertEq(scheduler.getSchedule(aliceSchedule).remainingBalance, 0);
+        assertEq(scheduler.getSchedule(bobSchedule).remainingBalance, 200e18);
+
+        uint256 workerBefore = token.balanceOf(worker);
+        scheduler.executeDuePayment(bobSchedule);
+        assertEq(token.balanceOf(worker) - workerBefore, 200e18);
+        assertEq(scheduler.getSchedule(bobSchedule).remainingBalance, 0);
     }
 
     function testAutoPauseAfterMaxFailures() public {
@@ -144,12 +197,9 @@ contract SherpaPaySchedulerTest is Test {
         bytes32 id = scheduler.schedulePayment(bob, address(token), 100e18, startTime, INTERVAL, 0, 2);
         vm.stopPrank();
 
-        // Drain scheduler balance to zero
-        uint256 schedBal = token.balanceOf(address(scheduler));
-        vm.prank(address(scheduler));
-        token.transfer(address(0xdead), schedBal);
-
         vm.warp(startTime);
+        scheduler.executeDuePayment(id);
+        vm.warp(startTime + INTERVAL);
 
         // First failure - increments failure count
         scheduler.executeDuePayment(id);
@@ -169,7 +219,9 @@ contract SherpaPaySchedulerTest is Test {
     function testZeroAddressReverts() public {
         vm.prank(alice);
         vm.expectRevert(SherpaPayScheduler.ZeroAddress.selector);
-        scheduler.schedulePayment(address(0), address(token), 100e18, uint64(block.timestamp), INTERVAL, 0, MAX_FAILURES);
+        scheduler.schedulePayment(
+            address(0), address(token), 100e18, uint64(block.timestamp), INTERVAL, 0, MAX_FAILURES
+        );
     }
 
     function testInvalidIntervalReverts() public {
@@ -181,7 +233,8 @@ contract SherpaPaySchedulerTest is Test {
     function testUnauthorizedPauseReverts() public {
         vm.startPrank(alice);
         token.approve(address(scheduler), 1000e18);
-        bytes32 id = scheduler.schedulePayment(bob, address(token), 100e18, uint64(block.timestamp), INTERVAL, 0, MAX_FAILURES);
+        bytes32 id =
+            scheduler.schedulePayment(bob, address(token), 100e18, uint64(block.timestamp), INTERVAL, 0, MAX_FAILURES);
         vm.stopPrank();
 
         vm.prank(bob);

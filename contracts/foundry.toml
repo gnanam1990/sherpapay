@@ -10,7 +10,7 @@ ffi = false
 fuzz = { runs = 256 }
 invariant = { runs = 256 }
 
-[profile.default.rpc_endpoints]
+[rpc_endpoints]
 alfajores = "${CELO_ALFAJORES_RPC_URL}"
 celo = "${CELO_MAINNET_RPC_URL}"
 
