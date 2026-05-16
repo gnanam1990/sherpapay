@@ -19,6 +19,7 @@ import { celo, celoAlfajores } from 'wagmi/chains'
 import {
   useAccount,
   useChainId,
+  useReadContract,
   useSwitchChain,
   useWaitForTransactionReceipt,
   useWriteContract,
@@ -28,7 +29,9 @@ import {
   amountToWei,
   formatAddress,
   isValidAddress,
+  weiToAmount,
   type Intent,
+  type SafetyCheck,
   type SafetyContext,
   type SafetyResult,
 } from '@sherpapay/core'
@@ -71,6 +74,23 @@ function chainName(chainId: number): string {
   return 'Switch needed'
 }
 
+function safetyLevelForChecks(checks: readonly SafetyCheck[]): SafetyResult['level'] {
+  if (checks.some((check) => check.level === 'block')) return 'block'
+  if (checks.some((check) => check.level === 'warn')) return 'warn'
+  return 'safe'
+}
+
+function appendSafetyCheck(safety: SafetyResult, check: SafetyCheck): SafetyResult {
+  const checks = [...safety.checks, check]
+  const level = safetyLevelForChecks(checks)
+  return {
+    ...safety,
+    checks,
+    level,
+    passed: level !== 'block',
+  }
+}
+
 function explorerTxUrl(chainId: number, hash: string): string {
   const baseUrl =
     chainId === celoAlfajores.id ? 'https://alfajores.celoscan.io' : 'https://celoscan.io'
@@ -104,6 +124,29 @@ export function HomeFlow() {
   const [preview, setPreview] = useState<PreviewState | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [submittedHash, setSubmittedHash] = useState<Address | undefined>()
+  const previewedSendIntent = preview?.intent.kind === 'send' ? preview.intent : null
+  const targetChainId = isSupportedChain(chainId) ? chainId : celo.id
+  const previewTokenAddress = previewedSendIntent
+    ? (TOKENS[targetChainId][previewedSendIntent.token] as Address)
+    : undefined
+  const shouldReadTokenBalance = Boolean(
+    isConnected && address && previewedSendIntent && previewTokenAddress,
+  )
+
+  const {
+    data: tokenBalance,
+    isLoading: isBalanceLoading,
+    isFetching: isBalanceFetching,
+  } = useReadContract({
+    address: previewTokenAddress,
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    chainId: targetChainId,
+    query: {
+      enabled: shouldReadTokenBalance,
+    },
+  })
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash: submittedHash,
@@ -117,16 +160,40 @@ export function HomeFlow() {
     return 'Transfer submitted'
   }, [isConfirmed, isConfirming, submittedHash])
 
-  function buildSafetyContext(): SafetyContext {
+  function buildSafetyContext(userBalance: bigint = MAX_SAFE_BALANCE): SafetyContext {
     return {
       userAddress: address ?? '0x0000000000000000000000000000000000000000',
-      userBalance: MAX_SAFE_BALANCE,
+      userBalance,
       dailySpent: ZERO_AMOUNT,
       monthlySpent: ZERO_AMOUNT,
       knownRecipients: [],
       averageAmount: ZERO_AMOUNT,
     }
   }
+
+  const currentSafety = useMemo(() => {
+    if (!preview) return null
+
+    let safety = runSafetyChecks(
+      preview.intent,
+      buildSafetyContext(tokenBalance ?? MAX_SAFE_BALANCE),
+    )
+
+    if (
+      preview.intent.kind === 'send' &&
+      shouldReadTokenBalance &&
+      tokenBalance === undefined &&
+      (isBalanceLoading || isBalanceFetching)
+    ) {
+      safety = appendSafetyCheck(safety, {
+        name: 'balance-check',
+        level: 'block',
+        message: 'Checking connected wallet balance before signing.',
+      })
+    }
+
+    return safety
+  }, [isBalanceFetching, isBalanceLoading, preview, shouldReadTokenBalance, tokenBalance])
 
   function previewPrompt(input: string) {
     setError(null)
@@ -155,6 +222,13 @@ export function HomeFlow() {
 
     if (intent.kind !== 'send') return
 
+    const safety = currentSafety ?? preview.safety
+    const blockingCheck = safety.checks.find((check) => check.level === 'block')
+    if (blockingCheck) {
+      setError(blockingCheck.message)
+      return
+    }
+
     if (!isConnected || !address) {
       setError('Connect MiniPay or another Celo wallet before sending.')
       return
@@ -165,7 +239,6 @@ export function HomeFlow() {
       return
     }
 
-    const targetChainId = isSupportedChain(chainId) ? chainId : celo.id
     if (!isSupportedChain(chainId)) {
       await switchChainAsync({ chainId: targetChainId })
     }
@@ -174,6 +247,16 @@ export function HomeFlow() {
     const amountWei = amountToWei(intent.amount, intent.token)
     if (amountWei <= ZERO_AMOUNT) {
       setError('Amount must be greater than zero.')
+      return
+    }
+    if (tokenBalance === undefined) {
+      setError('Could not read your token balance yet. Try again in a moment.')
+      return
+    }
+    if (amountWei > tokenBalance) {
+      setError(
+        `Insufficient ${intent.token} balance. You have ${weiToAmount(tokenBalance, intent.token)} ${intent.token}, but this transfer needs ${intent.amount} ${intent.token}.`,
+      )
       return
     }
 
@@ -261,7 +344,7 @@ export function HomeFlow() {
             </div>
             <ConfirmationCard
               intent={preview.intent}
-              safety={preview.safety}
+              safety={currentSafety ?? preview.safety}
               onConfirm={() => {
                 void confirmPreview().catch((err: unknown) => {
                   setError(err instanceof Error ? err.message : 'Transaction failed.')

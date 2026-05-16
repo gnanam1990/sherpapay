@@ -20,6 +20,21 @@ interface ConfirmationCardProps {
 }
 
 export function ConfirmationCard({ intent, safety, onConfirm, onCancel }: ConfirmationCardProps) {
+  const checkStyles = {
+    safe: {
+      icon: <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-celo" />,
+      text: 'text-muted-foreground',
+    },
+    warn: {
+      icon: <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />,
+      text: 'text-accent',
+    },
+    block: {
+      icon: <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />,
+      text: 'text-destructive',
+    },
+  }
+
   const levelStyles = {
     safe: {
       shell: 'border-celo/50 bg-celo/10',
@@ -120,12 +135,22 @@ export function ConfirmationCard({ intent, safety, onConfirm, onCancel }: Confir
 
         {safety.checks.length > 0 && (
           <div className="space-y-2">
-            {safety.checks.map((check, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-celo" />
-                <p>{check.message}</p>
-              </div>
-            ))}
+            {safety.checks.map((check, i) => {
+              const checkStyle = checkStyles[check.level]
+              return (
+                <div key={i} className={cn('flex items-start gap-2 text-xs', checkStyle.text)}>
+                  {checkStyle.icon}
+                  <p>{check.message}</p>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {!safety.passed && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            Fix the blocked check above before signing. This prevents failed transfers and wasted
+            gas.
           </div>
         )}
 
