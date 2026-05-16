@@ -1,0 +1,51 @@
+{
+  "name": "sherpapay",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plain-English payments for MiniPay — Celo native",
+  "homepage": "https://sherpapay.xyz",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gnanam1990/sherpapay.git"
+  },
+  "license": "MIT",
+  "author": "gnanam1990",
+  "scripts": {
+    "build": "turbo build",
+    "test": "turbo test",
+    "typecheck": "turbo typecheck",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint:fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\"",
+    "dev:web": "turbo dev --filter=@sherpapay/web",
+    "dev:api": "turbo dev --filter=@sherpapay/api",
+    "dev:db": "turbo dev --filter=@sherpapay/memory",
+    "deploy:testnet": "cd contracts && forge script script/DeployTestnet.s.sol --rpc-url alfajores --broadcast --verify",
+    "deploy:mainnet": "cd contracts && forge script script/DeployMainnet.s.sol --rpc-url celo --broadcast --verify",
+    "prepare": "husky",
+    "commitlint": "commitlint --edit"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
+    "prettier": "^3.2.0",
+    "turbo": "^2.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.1"
+}
