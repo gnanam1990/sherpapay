@@ -17,17 +17,27 @@ export function Header() {
         </Link>
 
         <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-          <Link href="/schedules" className="transition-colors hover:text-primary">Schedules</Link>
-          <Link href="/goals" className="transition-colors hover:text-primary">Goals</Link>
-          <Link href="/history" className="transition-colors hover:text-primary">History</Link>
-          <Link href="/settings" className="transition-colors hover:text-primary">Settings</Link>
+          <Link href="/schedules" className="transition-colors hover:text-primary">
+            Schedules
+          </Link>
+          <Link href="/goals" className="transition-colors hover:text-primary">
+            Goals
+          </Link>
+          <Link href="/history" className="transition-colors hover:text-primary">
+            History
+          </Link>
+          <Link href="/settings" className="transition-colors hover:text-primary">
+            Settings
+          </Link>
         </nav>
 
         <div className="ml-auto flex items-center space-x-4">
           <ConnectButton />
           <button
             className="md:hidden"
-            onClick={() => setMobileOpen(!mobileOpen)}
+            onClick={() => {
+              setMobileOpen(!mobileOpen)
+            }}
           >
             {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
@@ -36,10 +46,42 @@ export function Header() {
 
       {mobileOpen && (
         <nav className="md:hidden border-t p-4 space-y-3">
-          <Link href="/schedules" className="block py-2" onClick={() => setMobileOpen(false)}>Schedules</Link>
-          <Link href="/goals" className="block py-2" onClick={() => setMobileOpen(false)}>Goals</Link>
-          <Link href="/history" className="block py-2" onClick={() => setMobileOpen(false)}>History</Link>
-          <Link href="/settings" className="block py-2" onClick={() => setMobileOpen(false)}>Settings</Link>
+          <Link
+            href="/schedules"
+            className="block py-2"
+            onClick={() => {
+              setMobileOpen(false)
+            }}
+          >
+            Schedules
+          </Link>
+          <Link
+            href="/goals"
+            className="block py-2"
+            onClick={() => {
+              setMobileOpen(false)
+            }}
+          >
+            Goals
+          </Link>
+          <Link
+            href="/history"
+            className="block py-2"
+            onClick={() => {
+              setMobileOpen(false)
+            }}
+          >
+            History
+          </Link>
+          <Link
+            href="/settings"
+            className="block py-2"
+            onClick={() => {
+              setMobileOpen(false)
+            }}
+          >
+            Settings
+          </Link>
         </nav>
       )}
     </header>

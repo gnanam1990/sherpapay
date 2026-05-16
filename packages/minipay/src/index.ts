@@ -7,6 +7,5 @@ export function isMiniPay(): boolean {
 
 export function getMiniPayProvider(): unknown {
   if (typeof window === 'undefined') return null
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (window as any).ethereum ?? null
+  return (window as Window & { ethereum?: unknown }).ethereum ?? null
 }

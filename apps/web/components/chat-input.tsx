@@ -12,7 +12,7 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
   const [input, setInput] = useState('')
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    (e: React.SyntheticEvent<HTMLFormElement>) => {
       e.preventDefault()
       if (input.trim() && !isLoading) {
         onSubmit(input.trim())
@@ -27,7 +27,9 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
       <input
         type="text"
         value={input}
-        onChange={(e) => setInput(e.target.value)}
+        onChange={(e) => {
+          setInput(e.target.value)
+        }}
         placeholder='Try "send 5 cUSD to mom every friday"'
         className="w-full rounded-xl border bg-background px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         disabled={isLoading}

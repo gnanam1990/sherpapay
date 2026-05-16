@@ -16,7 +16,7 @@ async function fetchDueSchedules(): Promise<ScheduleDue[]> {
   try {
     const res = await fetch(`${apiUrl}/api/schedules/due?limit=50`)
     if (!res.ok) return []
-    const data = await res.json() as { schedules: ScheduleDue[] }
+    const data = (await res.json()) as { schedules: ScheduleDue[] }
     return data.schedules ?? []
   } catch (err) {
     console.error('Failed to fetch due schedules:', err)
@@ -24,8 +24,14 @@ async function fetchDueSchedules(): Promise<ScheduleDue[]> {
   }
 }
 
-async function executeSchedule(schedule: ScheduleDue): Promise<{ success: boolean; txHash?: string; error?: string }> {
-  console.log(`Executing schedule ${schedule.id} for ${schedule.amountWei} ${schedule.token} to ${schedule.recipientAddress}`)
+function executeSchedule(schedule: ScheduleDue): {
+  success: boolean
+  txHash?: string
+  error?: string
+} {
+  console.log(
+    `Executing schedule ${schedule.id} for ${schedule.amountWei} ${schedule.token} to ${schedule.recipientAddress}`,
+  )
 
   // In production, this would:
   // 1. Check sender balance
@@ -47,7 +53,7 @@ async function processSchedules(): Promise<void> {
 
   for (const schedule of dueSchedules) {
     try {
-      const result = await executeSchedule(schedule)
+      const result = executeSchedule(schedule)
 
       if (result.success) {
         console.log(`Schedule ${schedule.id} executed successfully. TX: ${result.txHash}`)
@@ -68,14 +74,16 @@ async function main(): Promise<void> {
   await processSchedules()
 
   // Schedule recurring execution
-  cron.schedule(CRON_SCHEDULE, async () => {
-    await processSchedules()
+  cron.schedule(CRON_SCHEDULE, () => {
+    void processSchedules().catch((err: unknown) => {
+      console.error('Scheduled worker run failed:', err)
+    })
   })
 
   console.log('Worker is running. Press Ctrl+C to stop.')
 }
 
-main().catch((err) => {
+main().catch((err: unknown) => {
   console.error('Worker failed to start:', err)
   process.exit(1)
 })
