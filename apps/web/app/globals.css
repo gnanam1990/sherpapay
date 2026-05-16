@@ -3,18 +3,41 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  --background: 220 24% 7%;
+  --background-soft: 222 22% 10%;
+  --foreground: 210 35% 96%;
+  --card: 222 20% 10%;
+  --card-foreground: 210 35% 96%;
+  --muted: 220 15% 15%;
+  --muted-foreground: 216 13% 67%;
+  --accent: 44 92% 55%;
+  --accent-foreground: 221 34% 8%;
+  --destructive: 0 74% 58%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 218 18% 20%;
+  --input: 218 18% 18%;
+  --ring: 221 100% 61%;
+  --primary: 221 100% 56%;
+  --primary-foreground: 0 0% 100%;
+  --celo: 148 62% 51%;
+  --celo-foreground: 151 48% 8%;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: hsl(var(--border));
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: hsl(var(--foreground));
+  background:
+    linear-gradient(135deg, rgba(0, 82, 255, 0.16) 0%, transparent 28%),
+    linear-gradient(215deg, rgba(53, 208, 127, 0.1) 0%, transparent 34%),
+    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background-soft)) 100%);
+}
+
+::selection {
+  color: hsl(var(--primary-foreground));
+  background: hsl(var(--primary));
 }

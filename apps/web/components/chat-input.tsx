@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Send } from 'lucide-react'
+import { Send, Terminal } from 'lucide-react'
 
 interface ChatInputProps {
   onSubmit: (input: string) => void
@@ -23,7 +23,11 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
   )
 
   return (
-    <form onSubmit={handleSubmit} className="relative w-full max-w-2xl mx-auto">
+    <form
+      onSubmit={handleSubmit}
+      className="flex w-full items-center gap-3 rounded-lg border border-input bg-background/90 p-2 shadow-inner shadow-black/20 focus-within:border-primary/70 focus-within:ring-2 focus-within:ring-primary/25"
+    >
+      <Terminal className="ml-2 h-4 w-4 shrink-0 text-celo" />
       <input
         type="text"
         value={input}
@@ -31,13 +35,14 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
           setInput(e.target.value)
         }}
         placeholder='Try "send 0.01 cUSD to 0x..."'
-        className="w-full rounded-xl border bg-background px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+        className="min-w-0 flex-1 bg-transparent py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none sm:text-base"
         disabled={isLoading}
       />
       <button
         type="submit"
         disabled={!input.trim() || isLoading}
-        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg bg-primary p-2 text-white disabled:opacity-50"
+        aria-label="Preview command"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
       >
         <Send className="h-4 w-4" />
       </button>

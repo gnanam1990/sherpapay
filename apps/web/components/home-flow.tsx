@@ -1,7 +1,20 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { AlertCircle, CheckCircle2, ExternalLink, Loader2, Wallet } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowRight,
+  BadgeCheck,
+  CheckCircle2,
+  Clock3,
+  Coins,
+  ExternalLink,
+  Loader2,
+  Network,
+  ShieldCheck,
+  Wallet,
+  Zap,
+} from 'lucide-react'
 import { celo, celoAlfajores } from 'wagmi/chains'
 import {
   useAccount,
@@ -39,11 +52,23 @@ const EXAMPLE_PROMPTS = [
   'send 1 USDT to 0x99f37717f2EB28955CFB553f3B7Eb4eFaDf4dA8C',
 ] as const
 
+const SUPPORTED_ASSETS = [
+  { symbol: 'cUSD', name: 'Celo Dollar', tone: 'border-celo/30 bg-celo/10 text-celo' },
+  { symbol: 'cEUR', name: 'Celo Euro', tone: 'border-primary/30 bg-primary/10 text-primary' },
+  { symbol: 'USDT', name: 'Tether USD', tone: 'border-accent/40 bg-accent/10 text-accent' },
+] as const
+
 const MAX_SAFE_BALANCE = BigInt(2) ** BigInt(256) - BigInt(1)
 const ZERO_AMOUNT = BigInt(0)
 
 function isSupportedChain(chainId: number): chainId is keyof typeof TOKENS {
   return chainId === celo.id || chainId === celoAlfajores.id
+}
+
+function chainName(chainId: number): string {
+  if (chainId === celo.id) return 'Celo'
+  if (chainId === celoAlfajores.id) return 'Alfajores'
+  return 'Switch needed'
 }
 
 function explorerTxUrl(chainId: number, hash: string): string {
@@ -66,7 +91,7 @@ function describeUnsupportedIntent(intent: Intent): string | null {
     return 'Portfolio/history views need the production API and indexer deployment.'
   }
   if (intent.kind === 'unknown') {
-    return 'I could not understand that yet. Try: send 0.01 cUSD to 0x...'
+    return 'Try a live transfer command such as: send 0.01 cUSD to 0x...'
   }
   return null
 }
@@ -87,9 +112,9 @@ export function HomeFlow() {
 
   const statusMessage = useMemo(() => {
     if (!submittedHash) return null
-    if (isConfirmed) return 'Transfer confirmed on Celo.'
-    if (isConfirming) return 'Transfer submitted. Waiting for confirmation...'
-    return 'Transfer submitted.'
+    if (isConfirmed) return 'Transfer confirmed'
+    if (isConfirming) return 'Waiting for confirmation'
+    return 'Transfer submitted'
   }, [isConfirmed, isConfirming, submittedHash])
 
   function buildSafetyContext(): SafetyContext {
@@ -108,6 +133,12 @@ export function HomeFlow() {
     setSubmittedHash(undefined)
 
     const intent = parse(input)
+    if (intent.kind === 'unknown') {
+      setPreview(null)
+      setError(describeUnsupportedIntent(intent))
+      return
+    }
+
     const safety = runSafetyChecks(intent, buildSafetyContext())
     setPreview({ input, intent, safety })
   }
@@ -158,110 +189,182 @@ export function HomeFlow() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-      <section className="space-y-2 text-center">
-        <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-celo/30 bg-celo/10 px-3 py-1 text-xs font-medium text-celo">
-          <Wallet className="h-3.5 w-3.5" />
-          Live now: one-time MiniPay/Celo stablecoin sends
+    <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <section className="min-w-0 space-y-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-2 rounded-full border border-celo/30 bg-celo/10 px-3 py-1 text-xs font-medium text-celo">
+            <Zap className="h-3.5 w-3.5" />
+            Live transfers
+          </span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            <Wallet className="h-3.5 w-3.5" />
+            MiniPay ready
+          </span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-accent/35 bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
+            <Clock3 className="h-3.5 w-3.5" />
+            Scheduler next
+          </span>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Type once. <span className="text-celo">Send on Celo.</span>
-        </h1>
-        <p className="mx-auto max-w-xl text-muted-foreground">
-          Type a payment in plain English, review the safety card, then sign the token transfer from
-          your wallet.
-        </p>
-      </section>
 
-      <section className="rounded-xl border bg-card p-4 shadow-sm sm:p-6">
-        <ChatInput onSubmit={previewPrompt} isLoading={isWriting || isSwitching} />
-        <div className="mt-4 flex flex-col gap-2">
-          {EXAMPLE_PROMPTS.map((prompt) => (
-            <button
-              key={prompt}
-              type="button"
-              onClick={() => {
-                previewPrompt(prompt)
-              }}
-              className="rounded-lg border px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:text-sm"
-            >
-              {prompt}
-            </button>
-          ))}
+        <div className="space-y-3">
+          <h1 className="max-w-3xl text-4xl font-semibold leading-[1.05] text-foreground sm:text-5xl">
+            Send Celo stables from plain English.
+          </h1>
+          <p className="max-w-2xl text-base leading-7 text-muted-foreground">
+            One command becomes a safety-checked wallet transfer for cUSD, cEUR, or USDT.
+          </p>
         </div>
-      </section>
 
-      {preview && (
-        <section className="space-y-3">
-          <div className="rounded-lg border bg-background/60 p-3 text-sm text-muted-foreground">
-            Parsed: <span className="text-foreground">{preview.input}</span>
+        <section className="rounded-lg border border-border/70 bg-card/90 p-4 shadow-soft-panel sm:p-5">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase text-muted-foreground">Command</p>
+              <p className="mt-1 text-sm text-foreground">Celo stablecoin transfer</p>
+            </div>
+            <div className="inline-flex w-fit items-center gap-2 rounded-md border border-border/70 bg-background/60 px-3 py-2 text-xs text-muted-foreground">
+              <Network className="h-3.5 w-3.5 text-celo" />
+              {chainName(chainId)}
+            </div>
           </div>
-          <ConfirmationCard
-            intent={preview.intent}
-            safety={preview.safety}
-            onConfirm={() => {
-              void confirmPreview().catch((err: unknown) => {
-                setError(err instanceof Error ? err.message : 'Transaction failed.')
-              })
-            }}
-            onCancel={() => {
-              setPreview(null)
-              setError(null)
-              setSubmittedHash(undefined)
-            }}
-          />
+
+          <ChatInput onSubmit={previewPrompt} isLoading={isWriting || isSwitching} />
+
+          <div className="mt-4 grid gap-2">
+            {EXAMPLE_PROMPTS.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                onClick={() => {
+                  previewPrompt(prompt)
+                }}
+                className="group flex w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-md border border-border/70 bg-background/40 px-3 py-3 text-left text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/10 hover:text-foreground sm:text-sm"
+              >
+                <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-mono">
+                  {prompt}
+                </span>
+                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+              </button>
+            ))}
+          </div>
         </section>
-      )}
 
-      {error && (
-        <div className="flex items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-500">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>{error}</p>
-        </div>
-      )}
+        {preview && (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-card/70 px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase text-muted-foreground">
+                  Parsed command
+                </p>
+                <p className="mt-1 truncate font-mono text-sm text-foreground">{preview.input}</p>
+              </div>
+              <BadgeCheck className="h-5 w-5 shrink-0 text-celo" />
+            </div>
+            <ConfirmationCard
+              intent={preview.intent}
+              safety={preview.safety}
+              onConfirm={() => {
+                void confirmPreview().catch((err: unknown) => {
+                  setError(err instanceof Error ? err.message : 'Transaction failed.')
+                })
+              }}
+              onCancel={() => {
+                setPreview(null)
+                setError(null)
+                setSubmittedHash(undefined)
+              }}
+            />
+          </section>
+        )}
 
-      {submittedHash && (
-        <div className="rounded-lg border border-celo/40 bg-celo/10 p-4 text-sm">
-          <div className="flex items-center gap-2 font-medium text-celo">
-            {isConfirming ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <CheckCircle2 className="h-4 w-4" />
-            )}
-            {statusMessage}
+        {error && (
+          <div className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>{error}</p>
           </div>
-          <a
-            href={explorerTxUrl(isSupportedChain(chainId) ? chainId : celo.id, submittedHash)}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-2 inline-flex items-center gap-1 text-xs text-foreground underline"
-          >
-            View {formatAddress(submittedHash)} on Celoscan
-            <ExternalLink className="h-3 w-3" />
-          </a>
-        </div>
-      )}
+        )}
 
-      <section className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-lg border bg-card p-4">
-          <p className="font-medium">MiniPay ready</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Works with injected MiniPay/Celo wallets.
-          </p>
-        </div>
-        <div className="rounded-lg border bg-card p-4">
-          <p className="font-medium">Safety first</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Amount, token, recipient, and risk checks run before signing.
-          </p>
-        </div>
-        <div className="rounded-lg border bg-card p-4">
-          <p className="font-medium">Next: scheduler</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Recurring sends unlock after mainnet contract deployment.
-          </p>
-        </div>
+        {submittedHash && (
+          <div className="rounded-lg border border-celo/50 bg-celo/10 p-4 text-sm">
+            <div className="flex items-center gap-2 font-medium text-celo">
+              {isConfirming ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
+              {statusMessage}
+            </div>
+            <a
+              href={explorerTxUrl(isSupportedChain(chainId) ? chainId : celo.id, submittedHash)}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 inline-flex items-center gap-1 text-xs text-foreground underline"
+            >
+              View {formatAddress(submittedHash)} on Celoscan
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        )}
       </section>
+
+      <aside className="space-y-4">
+        <section className="rounded-lg border border-border/70 bg-card/80 p-4 shadow-soft-panel">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium uppercase text-muted-foreground">Wallet</p>
+              <p className="mt-1 font-mono text-sm text-foreground">
+                {isConnected && address ? formatAddress(address) : 'Not connected'}
+              </p>
+            </div>
+            <div className="grid h-10 w-10 place-items-center rounded-md bg-primary/10 text-primary">
+              <Wallet className="h-5 w-5" />
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-border/70 bg-card/80 p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <Coins className="h-4 w-4 text-celo" />
+            <p className="text-sm font-medium">Assets</p>
+          </div>
+          <div className="space-y-2">
+            {SUPPORTED_ASSETS.map((asset) => (
+              <div
+                key={asset.symbol}
+                className="flex items-center justify-between rounded-md border border-border/70 bg-background/40 px-3 py-2"
+              >
+                <div>
+                  <p className="text-sm font-medium text-foreground">{asset.symbol}</p>
+                  <p className="text-xs text-muted-foreground">{asset.name}</p>
+                </div>
+                <span className={`rounded-full border px-2 py-1 text-xs ${asset.tone}`}>live</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-border/70 bg-card/80 p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            <p className="text-sm font-medium">Execution</p>
+          </div>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-start gap-3">
+              <span className="mt-1 h-2 w-2 rounded-full bg-celo" />
+              <p className="text-muted-foreground">Parser and safety checks run before signing.</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="mt-1 h-2 w-2 rounded-full bg-primary" />
+              <p className="text-muted-foreground">Transfers are signed by the connected wallet.</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="mt-1 h-2 w-2 rounded-full bg-accent" />
+              <p className="text-muted-foreground">
+                Scheduler and vault stay gated until deployment.
+              </p>
+            </div>
+          </div>
+        </section>
+      </aside>
     </div>
   )
 }

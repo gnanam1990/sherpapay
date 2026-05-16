@@ -2,45 +2,67 @@
 
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import Link from 'next/link'
-import { Menu, X } from 'lucide-react'
+import { Calendar, Clock, Home, Menu, Settings, Target, X } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 import { useState } from 'react'
+import { cn } from '@/lib/utils'
+
+const navItems = [
+  { href: '/', label: 'Home', icon: Home },
+  { href: '/schedules', label: 'Schedules', icon: Calendar },
+  { href: '/goals', label: 'Goals', icon: Target },
+  { href: '/history', label: 'History', icon: Clock },
+  { href: '/settings', label: 'Settings', icon: Settings },
+]
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const pathname = usePathname()
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
-        <Link href="/" className="mr-6 flex items-center space-x-2">
+    <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background/80 backdrop-blur-xl">
+      <div className="container flex h-16 items-center gap-4">
+        <Link href="/" className="flex min-w-0 items-center gap-3">
           <img
             src="/sherpa-icon-192.png"
             alt="SherpaPay"
-            className="h-8 w-8 rounded-lg"
+            className="h-9 w-9 rounded-md shadow-sm"
             width={32}
             height={32}
           />
-          <span className="font-bold text-primary">SherpaPay</span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold leading-4 text-foreground">SherpaPay</span>
+            <span className="hidden text-xs text-muted-foreground sm:block">Celo payments</span>
+          </span>
         </Link>
 
-        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-          <Link href="/schedules" className="transition-colors hover:text-primary">
-            Schedules
-          </Link>
-          <Link href="/goals" className="transition-colors hover:text-primary">
-            Goals
-          </Link>
-          <Link href="/history" className="transition-colors hover:text-primary">
-            History
-          </Link>
-          <Link href="/settings" className="transition-colors hover:text-primary">
-            Settings
-          </Link>
+        <nav className="hidden items-center gap-1 rounded-lg border border-border/70 bg-card/70 p-1 text-sm font-medium md:flex">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-md px-3 py-2 transition-colors',
+                  isActive
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            )
+          })}
         </nav>
 
-        <div className="ml-auto flex items-center space-x-4">
+        <div className="ml-auto flex items-center gap-3">
           <ConnectButton />
           <button
-            className="md:hidden"
+            type="button"
+            aria-label="Toggle navigation"
+            className="rounded-md border border-border/80 bg-card p-2 text-muted-foreground transition-colors hover:text-foreground md:hidden"
             onClick={() => {
               setMobileOpen(!mobileOpen)
             }}
@@ -51,43 +73,28 @@ export function Header() {
       </div>
 
       {mobileOpen && (
-        <nav className="md:hidden border-t p-4 space-y-3">
-          <Link
-            href="/schedules"
-            className="block py-2"
-            onClick={() => {
-              setMobileOpen(false)
-            }}
-          >
-            Schedules
-          </Link>
-          <Link
-            href="/goals"
-            className="block py-2"
-            onClick={() => {
-              setMobileOpen(false)
-            }}
-          >
-            Goals
-          </Link>
-          <Link
-            href="/history"
-            className="block py-2"
-            onClick={() => {
-              setMobileOpen(false)
-            }}
-          >
-            History
-          </Link>
-          <Link
-            href="/settings"
-            className="block py-2"
-            onClick={() => {
-              setMobileOpen(false)
-            }}
-          >
-            Settings
-          </Link>
+        <nav className="space-y-1 border-t border-border/70 bg-background/95 p-3 md:hidden">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-3 rounded-md px-3 py-3 text-sm transition-colors',
+                  isActive
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                )}
+                onClick={() => {
+                  setMobileOpen(false)
+                }}
+              >
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            )
+          })}
         </nav>
       )}
     </header>

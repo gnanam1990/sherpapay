@@ -11,7 +11,7 @@ export default function HomePage() {
     <Providers>
       <div className="flex min-h-screen flex-col">
         <Header />
-        <main className="flex-1 container py-8 pb-20 md:pb-8">
+        <main className="container flex-1 py-6 pb-24 md:py-8">
           <HomeFlow />
         </main>
         <BottomNav />
