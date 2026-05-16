@@ -2,7 +2,7 @@
 
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import Link from 'next/link'
-import { Mountain, Menu, X } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
 
 export function Header() {
@@ -12,7 +12,13 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
         <Link href="/" className="mr-6 flex items-center space-x-2">
-          <Mountain className="h-6 w-6 text-celo" />
+          <img
+            src="/sherpa-icon-192.png"
+            alt="SherpaPay"
+            className="h-8 w-8 rounded-lg"
+            width={32}
+            height={32}
+          />
           <span className="font-bold text-primary">SherpaPay</span>
         </Link>
 
