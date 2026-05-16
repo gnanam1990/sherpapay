@@ -1,9 +1,12 @@
-export interface DatabaseConfig {
-  readonly connectionString: string
-  readonly maxConnections: number
-}
-
-export function createDatabasePool(_config: DatabaseConfig): null {
-  // Placeholder — implemented in Stage 4
-  return null
-}
+export { createPool, runMigrations } from './db/pool.js'
+export type { DatabaseConfig } from './db/pool.js'
+export { createUserRepository } from './repository/users.js'
+export type { User } from './repository/users.js'
+export { createAliasRepository } from './repository/aliases.js'
+export type { RecipientAlias } from './repository/aliases.js'
+export { createScheduleRepository } from './repository/schedules.js'
+export type { Schedule } from './repository/schedules.js'
+export { createExecutionRepository } from './repository/executions.js'
+export type { Execution } from './repository/executions.js'
+export { createGoalRepository } from './repository/goals.js'
+export type { Goal } from './repository/goals.js'
