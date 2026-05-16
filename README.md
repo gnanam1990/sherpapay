@@ -77,7 +77,9 @@ sherpapay/
 
 Manages scheduled recurring payments on Celo.
 
+- **Celo mainnet:** `0x135Ea0F5422fB1D4aDeaC8A205735498ffA5B933`
 - `schedulePayment()` — Create a new recurring payment
+- `fundSchedule()` — Add escrow for future executions
 - `executeDuePayment()` — Execute a payment that's due
 - `executeBatch()` — Execute multiple due payments
 - `pauseSchedule()` / `resumeSchedule()` / `cancelSchedule()`
@@ -86,6 +88,7 @@ Manages scheduled recurring payments on Celo.
 
 Savings goals with auto-DCA.
 
+- **Celo mainnet:** `0x70A58169BF96587E55F500c4b5cb9d956Ef826ee`
 - `createGoal()` — Create a savings goal
 - `contribute()` — Add funds toward a goal
 - `withdraw()` — Withdraw when goal is achieved
@@ -139,6 +142,12 @@ forge test
 
 # Deploy to Alfajores (testnet)
 forge script script/DeployTestnet.s.sol --rpc-url alfajores --broadcast --verify
+
+# Deploy to Celo mainnet with an encrypted Foundry account
+forge script script/DeployMainnet.s.sol:DeployMainnet \
+  --rpc-url https://forno.celo.org \
+  --account sherpapay-deployer \
+  --broadcast
 ```
 
 ## Quality Gates

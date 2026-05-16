@@ -5,6 +5,7 @@ import {
   CELO_ALFAJORES_RPC_URL,
   CELO_MAINNET_TOKENS,
   CELO_ALFAJORES_TOKENS,
+  CELO_MAINNET_SHERPAPAY_CONTRACTS,
 } from '@sherpapay/core'
 import type { TokenSymbol } from '@sherpapay/core'
 import { createPublicClient, http, type PublicClient, type Chain } from 'viem'
@@ -19,6 +20,7 @@ export const celoTestnet: Chain = celoAlfajores
 
 export const mainnetTokens = CELO_MAINNET_TOKENS
 export const testnetTokens = CELO_ALFAJORES_TOKENS
+export const mainnetContracts = CELO_MAINNET_SHERPAPAY_CONTRACTS
 
 // ─── ERC-20 ABI (minimal) ────────────────────────────────────────────
 

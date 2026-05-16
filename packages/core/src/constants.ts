@@ -35,6 +35,18 @@ export const CELO_ALFAJORES_TOKENS: TokenAddresses = {
   USDT: '0x2F25deB3848C207fc8E0c34035B3Ba7fC157602B',
 } as const
 
+// ─── SherpaPay Contracts ─────────────────────────────────────────────
+
+export interface SherpaPayContractAddresses {
+  readonly scheduler: string
+  readonly vault: string
+}
+
+export const CELO_MAINNET_SHERPAPAY_CONTRACTS: SherpaPayContractAddresses = {
+  scheduler: '0x135Ea0F5422fB1D4aDeaC8A205735498ffA5B933',
+  vault: '0x70A58169BF96587E55F500c4b5cb9d956Ef826ee',
+} as const
+
 // ─── Safety Limits ───────────────────────────────────────────────────
 
 export const SAFETY_LIMITS = {

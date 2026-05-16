@@ -15,7 +15,7 @@ export default function SchedulesPage() {
           <EmptyState
             icon={CalendarClock}
             title="Schedules"
-            description="Recurring transfers are waiting on the Celo scheduler contract deployment."
+            description="The Celo scheduler contract is live. Recurring transfers unlock after API and worker wiring."
             actionHref="/"
             actionLabel="Open command"
             tone="accent"

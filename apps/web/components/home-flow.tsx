@@ -99,13 +99,13 @@ function explorerTxUrl(chainId: number, hash: string): string {
 
 function describeUnsupportedIntent(intent: Intent): string | null {
   if (intent.kind === 'schedule') {
-    return 'Scheduled payments need the SherpaPayScheduler contract deployed on Celo mainnet before this can execute for real.'
+    return 'SherpaPayScheduler is live on Celo. The scheduling UI and worker API are the next production wiring step.'
   }
   if (intent.kind === 'save') {
-    return 'Savings goals need the SherpaPayVault contract deployed on Celo mainnet before this can execute for real.'
+    return 'SherpaPayVault is live on Celo. Goal creation is waiting on the wallet transaction flow.'
   }
   if (intent.kind === 'cancel' || intent.kind === 'pause' || intent.kind === 'resume') {
-    return 'Schedule management becomes available after the scheduler contract is deployed.'
+    return 'Schedule management is waiting on the production scheduler API and indexer.'
   }
   if (intent.kind === 'status') {
     return 'Portfolio/history views need the production API and indexer deployment.'
@@ -285,7 +285,7 @@ export function HomeFlow() {
           </span>
           <span className="inline-flex items-center gap-2 rounded-full border border-accent/35 bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
             <Clock3 className="h-3.5 w-3.5" />
-            Scheduler next
+            Contracts live
           </span>
         </div>
 
@@ -442,7 +442,7 @@ export function HomeFlow() {
             <div className="flex items-start gap-3">
               <span className="mt-1 h-2 w-2 rounded-full bg-accent" />
               <p className="text-muted-foreground">
-                Scheduler and vault stay gated until deployment.
+                Scheduler and vault contracts are live; API and worker wiring comes next.
               </p>
             </div>
           </div>

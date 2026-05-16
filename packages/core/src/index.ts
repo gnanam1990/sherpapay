@@ -21,13 +21,14 @@ export {
   CELO_ALFAJORES_EXPLORER,
   CELO_MAINNET_TOKENS,
   CELO_ALFAJORES_TOKENS,
+  CELO_MAINNET_SHERPAPAY_CONTRACTS,
   SAFETY_LIMITS,
   KNOWN_SCAM_ADDRESSES,
   SCHEDULE_DEFAULTS,
   TOKEN_DECIMALS,
   FREQUENCY_INTERVALS,
 } from './constants.js'
-export type { TokenAddresses } from './constants.js'
+export type { SherpaPayContractAddresses, TokenAddresses } from './constants.js'
 export {
   SherpaPayError,
   ValidationError,

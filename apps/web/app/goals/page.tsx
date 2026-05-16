@@ -15,7 +15,7 @@ export default function GoalsPage() {
           <EmptyState
             icon={Target}
             title="Savings Goals"
-            description="Vault-backed goals unlock after the SherpaPayVault contract is deployed."
+            description="The Celo vault contract is live. Goal creation unlocks after the wallet transaction flow is wired."
             actionHref="/"
             actionLabel="Open command"
             tone="celo"
