@@ -20,15 +20,48 @@ describe('safety - input validation', () => {
   })
 
   it('blocks insufficient balance', () => {
-    const intent: Intent = { kind: 'send', recipient: 'mom', amount: String(BigInt(2000e18)), token: 'cUSD' }
+    const intent: Intent = {
+      kind: 'send',
+      recipient: 'mom',
+      amount: String(BigInt(2000e18)),
+      token: 'cUSD',
+    }
     const result = runSafetyChecks(intent, defaultContext)
     expect(result.passed).toBe(false)
   })
 
   it('passes valid amount', () => {
-    const intent: Intent = { kind: 'send', recipient: 'mom', amount: String(BigInt(5e18)), token: 'cUSD' }
+    const intent: Intent = {
+      kind: 'send',
+      recipient: 'mom',
+      amount: String(BigInt(5e18)),
+      token: 'cUSD',
+    }
     const result = runSafetyChecks(intent, defaultContext)
     expect(result.passed).toBe(true)
+  })
+
+  it('accepts human decimal amounts from the parser', () => {
+    const intent: Intent = {
+      kind: 'send',
+      recipient: 'mom',
+      amount: '5.5',
+      token: 'cUSD',
+    }
+    const result = runSafetyChecks(intent, defaultContext)
+    expect(result.passed).toBe(true)
+  })
+
+  it('blocks invalid amount strings without throwing', () => {
+    const intent: Intent = {
+      kind: 'send',
+      recipient: 'mom',
+      amount: 'five',
+      token: 'cUSD',
+    }
+    const result = runSafetyChecks(intent, defaultContext)
+    expect(result.passed).toBe(false)
+    expect(result.checks.some((c) => c.message === 'Amount is invalid')).toBe(true)
   })
 })
 
@@ -47,7 +80,9 @@ describe('safety - recipient verification', () => {
       token: 'cUSD',
     }
     const result = runSafetyChecks(intent, defaultContext)
-    expect(result.checks.some((c) => c.name === 'recipient-verification' && c.level === 'warn')).toBe(true)
+    expect(
+      result.checks.some((c) => c.name === 'recipient-verification' && c.level === 'warn'),
+    ).toBe(true)
   })
 
   it('passes known recipient', () => {
@@ -58,26 +93,43 @@ describe('safety - recipient verification', () => {
       token: 'cUSD',
     }
     const result = runSafetyChecks(intent, defaultContext)
-    expect(result.checks.some((c) => c.name === 'recipient-verification' && c.level === 'block')).toBe(false)
+    expect(
+      result.checks.some((c) => c.name === 'recipient-verification' && c.level === 'block'),
+    ).toBe(false)
   })
 })
 
 describe('safety - amount limits', () => {
   it('blocks amount exceeding per-tx max', () => {
-    const intent: Intent = { kind: 'send', recipient: 'mom', amount: String(BigInt(600e18)), token: 'cUSD' }
+    const intent: Intent = {
+      kind: 'send',
+      recipient: 'mom',
+      amount: String(BigInt(600e18)),
+      token: 'cUSD',
+    }
     const result = runSafetyChecks(intent, { ...defaultContext, userBalance: BigInt(10000e18) })
     expect(result.passed).toBe(false)
   })
 
   it('warns when approaching daily limit', () => {
-    const intent: Intent = { kind: 'send', recipient: 'mom', amount: String(BigInt(100e18)), token: 'cUSD' }
+    const intent: Intent = {
+      kind: 'send',
+      recipient: 'mom',
+      amount: String(BigInt(100e18)),
+      token: 'cUSD',
+    }
     const ctx = { ...defaultContext, dailySpent: BigInt(950e18) }
     const result = runSafetyChecks(intent, ctx)
     expect(result.checks.some((c) => c.name === 'amount-limits' && c.level === 'warn')).toBe(true)
   })
 
   it('warns on anomalous amount', () => {
-    const intent: Intent = { kind: 'send', recipient: 'mom', amount: String(BigInt(100e18)), token: 'cUSD' }
+    const intent: Intent = {
+      kind: 'send',
+      recipient: 'mom',
+      amount: String(BigInt(100e18)),
+      token: 'cUSD',
+    }
     const ctx = { ...defaultContext, averageAmount: BigInt(10e18) }
     const result = runSafetyChecks(intent, ctx)
     expect(result.checks.some((c) => c.name === 'amount-limits' && c.level === 'warn')).toBe(true)

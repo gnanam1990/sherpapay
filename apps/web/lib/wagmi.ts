@@ -6,7 +6,7 @@ import type { Config } from 'wagmi'
 
 export const config: Config = getDefaultConfig({
   appName: 'SherpaPay',
-  projectId: 'sherpapay',
+  projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID ?? 'e5e2ac7261e50897d3be44f22f30b8ca',
   chains: [celo, celoAlfajores],
   ssr: true,
 }) as Config

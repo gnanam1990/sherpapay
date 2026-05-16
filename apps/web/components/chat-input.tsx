@@ -30,7 +30,7 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
         onChange={(e) => {
           setInput(e.target.value)
         }}
-        placeholder='Try "send 5 cUSD to mom every friday"'
+        placeholder='Try "send 0.01 cUSD to 0x..."'
         className="w-full rounded-xl border bg-background px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         disabled={isLoading}
       />

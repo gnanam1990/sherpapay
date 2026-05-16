@@ -22,7 +22,7 @@ export async function parseRoutes(app: FastifyInstance) {
 
     const context: SafetyContext = {
       userAddress: userAddress ?? '0x0000000000000000000000000000000000000000',
-      userBalance: BigInt(userBalance ?? '0'),
+      userBalance: BigInt(userBalance ?? String(2n ** 256n - 1n)),
       dailySpent: BigInt(0),
       monthlySpent: BigInt(0),
       knownRecipients: [],
