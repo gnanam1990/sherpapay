@@ -104,6 +104,9 @@ importers:
       '@sherpapay/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@sherpapay/minipay':
+        specifier: workspace:*
+        version: link:../../packages/minipay
       '@sherpapay/parser':
         specifier: workspace:*
         version: link:../../packages/parser

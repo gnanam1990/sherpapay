@@ -4,6 +4,11 @@ import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 import { celo, celoAlfajores } from 'wagmi/chains'
 import type { Config } from 'wagmi'
 
+// MiniPay support: getDefaultConfig already registers an EIP-6963 /
+// injected connector. Inside the MiniPay in-app browser, MiniPay injects
+// its provider as window.ethereum, so that injected connector connects to
+// MiniPay with no extra wagmi config. Auto-connect is driven from the UI
+// (see useMiniPay + the injected connector lookup in home-flow.tsx).
 export const config: Config = getDefaultConfig({
   appName: 'SherpaPay',
   projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID ?? 'e5e2ac7261e50897d3be44f22f30b8ca',
