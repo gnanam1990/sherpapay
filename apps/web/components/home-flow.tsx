@@ -47,6 +47,7 @@ import { ConfirmationCard } from '@/components/confirmation-card'
 import { GoalConfirmationCard, type GoalSummary } from '@/components/goal-confirmation-card'
 import { useLocalCurrency } from '@/lib/use-fx'
 import { useAliases } from '@/lib/use-aliases'
+import { usePhoneMap } from '@/lib/use-phone-map'
 import { TOKENS } from '@/lib/wagmi'
 
 type Address = `0x${string}`
@@ -116,6 +117,12 @@ function intervalSeconds(frequency: Frequency): bigint | null {
   }
 }
 
+function recipientNotFoundMessage(recipient: string, isPhone: boolean): string {
+  return isPhone
+    ? `${recipient} isn't in your phone contacts. Add it in Settings, or use the wallet address directly.`
+    : `No saved alias "${recipient}". Add it in Settings, or use a full 0x address.`
+}
+
 function describeUnsupportedIntent(intent: Intent): string | null {
   if (intent.kind === 'cancel' || intent.kind === 'pause' || intent.kind === 'resume') {
     return 'Schedule management is waiting on the production scheduler API and indexer.'
@@ -133,6 +140,7 @@ export function HomeFlow() {
   const intl = useIntl()
   const fx = useLocalCurrency()
   const aliases = useAliases()
+  const phones = usePhoneMap()
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
   const { isMiniPay } = useMiniPay()
@@ -238,10 +246,11 @@ export function HomeFlow() {
   }, [isBalanceFetching, isBalanceLoading, preview, shouldReadTokenBalance, tokenBalance])
 
   // A 0x address passes through; otherwise try the connected wallet's
-  // saved aliases ("mom" → 0x…). null = unresolvable.
+  // saved aliases ("mom" → 0x…), then its local phone contacts
+  // ("+234…" → 0x…). null = unresolvable.
   function resolveRecipient(raw: string): Address | null {
     if (isValidAddress(raw)) return raw as Address
-    const resolved = aliases.resolve(raw)
+    const resolved = aliases.resolve(raw) ?? phones.resolve(raw)
     return resolved && isValidAddress(resolved) ? (resolved as Address) : null
   }
 
@@ -310,9 +319,7 @@ export function HomeFlow() {
 
     const recipient = resolveRecipient(intent.recipient)
     if (!recipient) {
-      setError(
-        `No saved alias "${intent.recipient}". Add it in Settings, or use a full 0x address.`,
-      )
+      setError(recipientNotFoundMessage(intent.recipient, intent.recipientType === 'phone'))
       return
     }
 
@@ -359,9 +366,7 @@ export function HomeFlow() {
     }
     const recipient = resolveRecipient(intent.recipient)
     if (!recipient) {
-      setError(
-        `No saved alias "${intent.recipient}". Add it in Settings, or use a full 0x address.`,
-      )
+      setError(recipientNotFoundMessage(intent.recipient, intent.recipientType === 'phone'))
       return
     }
     const interval = intervalSeconds(intent.frequency)
