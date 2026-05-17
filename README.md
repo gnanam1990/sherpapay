@@ -23,6 +23,34 @@ SherpaPay lets users type plain English to create scheduled payments:
 → SherpaPay parses intent, verifies safety, schedules onchain, executes automatically
 ```
 
+## MiniPay Native Integration
+
+SherpaPay is built MiniPay-first. When the app is opened inside the MiniPay
+in-app browser it:
+
+- **Auto-detects MiniPay** — via `window.ethereum.isMiniPay`, the MiniPay
+  user agent, or a nested injected provider (`@sherpapay/minipay`).
+- **Auto-connects** — binds to MiniPay's injected wallet through the
+  EIP-6963 connector, so users skip the manual "connect wallet" step.
+- **Shows a "Connected via MiniPay" badge** so users can see the native
+  session is active.
+- **Sends Celo stablecoins from plain English** — live cUSD, cEUR, and
+  USDT transfers, parsed and safety-checked before signing.
+
+Non-MiniPay browsers are unaffected — the standard RainbowKit wallet
+picker still applies.
+
+### Testing in MiniPay
+
+MiniPay detection and auto-connect only run inside the MiniPay app (they
+cannot be exercised in a normal desktop browser).
+
+1. Open the MiniPay app (Android / iOS)
+2. Tap **Discover**
+3. Enter the deployed SherpaPay URL
+4. The app auto-connects — type a command such as
+   `send 0.01 cUSD to 0x...` to send instantly
+
 ## Features
 
 - **Natural Language Input** — Type what you want in plain English
