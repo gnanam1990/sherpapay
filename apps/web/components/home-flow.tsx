@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
   ArrowRight,
@@ -19,11 +19,13 @@ import { celo, celoAlfajores } from 'wagmi/chains'
 import {
   useAccount,
   useChainId,
+  useConnect,
   useReadContract,
   useSwitchChain,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from 'wagmi'
+import { useMiniPay } from '@sherpapay/minipay'
 import { erc20Abi } from '@sherpapay/celo'
 import {
   amountToWei,
@@ -119,6 +121,18 @@ function describeUnsupportedIntent(intent: Intent): string | null {
 export function HomeFlow() {
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
+  const { isMiniPay } = useMiniPay()
+  const { connect, connectors } = useConnect()
+  // RainbowKit's getDefaultConfig registers an injected/EIP-6963 connector;
+  // inside the MiniPay app it binds to MiniPay's window.ethereum.
+  const injectedConnector = connectors.find((connector) => connector.type === 'injected')
+
+  useEffect(() => {
+    if (isMiniPay && !isConnected && injectedConnector) {
+      connect({ connector: injectedConnector })
+    }
+  }, [isMiniPay, isConnected, injectedConnector, connect])
+
   const { switchChainAsync, isPending: isSwitching } = useSwitchChain()
   const { writeContractAsync, isPending: isWriting } = useWriteContract()
   const [preview, setPreview] = useState<PreviewState | null>(null)
@@ -287,6 +301,12 @@ export function HomeFlow() {
             <Clock3 className="h-3.5 w-3.5" />
             Contracts live
           </span>
+          {isMiniPay && (
+            <span className="inline-flex items-center gap-2 rounded-full border border-celo/40 bg-celo/10 px-3 py-1 text-xs font-medium text-celo">
+              <Zap className="h-3.5 w-3.5" />
+              Connected via MiniPay
+            </span>
+          )}
         </div>
 
         <div className="space-y-3">
