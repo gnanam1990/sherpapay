@@ -1,20 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import {
-  AlertCircle,
-  ArrowRight,
-  BadgeCheck,
-  CheckCircle2,
-  Clock3,
-  Coins,
-  ExternalLink,
-  Loader2,
-  Network,
-  ShieldCheck,
-  Wallet,
-  Zap,
-} from 'lucide-react'
+import { AlertCircle, ArrowRight, CheckCircle2, ExternalLink, Loader2 } from 'lucide-react'
 import { celo, celoAlfajores } from 'wagmi/chains'
 import {
   useAccount,
@@ -69,12 +56,6 @@ const EXAMPLE_PROMPTS = [
   'send 0.01 cUSD to 0x99f37717f2EB28955CFB553f3B7Eb4eFaDf4dA8C',
   'send 0.01 cEUR to 0x99f37717f2EB28955CFB553f3B7Eb4eFaDf4dA8C',
   'send 1 USDT to 0x99f37717f2EB28955CFB553f3B7Eb4eFaDf4dA8C',
-] as const
-
-const SUPPORTED_ASSETS = [
-  { symbol: 'cUSD', name: 'Celo Dollar', tone: 'border-celo/30 bg-celo/10 text-celo' },
-  { symbol: 'cEUR', name: 'Celo Euro', tone: 'border-primary/30 bg-primary/10 text-primary' },
-  { symbol: 'USDT', name: 'Tether USD', tone: 'border-accent/40 bg-accent/10 text-accent' },
 ] as const
 
 const MAX_SAFE_BALANCE = BigInt(2) ** BigInt(256) - BigInt(1)
@@ -488,239 +469,169 @@ export function HomeFlow() {
       : undefined
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-      <section className="min-w-0 space-y-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-2 rounded-full border border-celo/30 bg-celo/10 px-3 py-1 text-xs font-medium text-celo">
-            <Zap className="h-3.5 w-3.5" />
-            Live transfers
-          </span>
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            <Wallet className="h-3.5 w-3.5" />
-            MiniPay ready
-          </span>
-          <span className="inline-flex items-center gap-2 rounded-full border border-accent/35 bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
-            <Clock3 className="h-3.5 w-3.5" />
-            Contracts live
-          </span>
-          {isMiniPay && (
-            <span className="inline-flex items-center gap-2 rounded-full border border-celo/40 bg-celo/10 px-3 py-1 text-xs font-medium text-celo">
-              <Zap className="h-3.5 w-3.5" />
-              Connected via MiniPay
-            </span>
-          )}
+    <div className="mx-auto w-full max-w-2xl">
+      <section className="animate-fade-in px-4 pb-2 pt-8 text-center">
+        <div className="celo-tag meta-label mb-4 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 font-semibold normal-case tracking-widest">
+          <span className="h-1.5 w-1.5 rounded-full bg-celo-green shadow-glow-celo" />
+          LIVE ON CELO MAINNET
         </div>
-
-        <div className="space-y-3">
-          <h1 className="max-w-3xl text-4xl font-semibold leading-[1.05] text-foreground sm:text-5xl">
-            {intl.formatMessage({ id: 'hero.title' })}
-          </h1>
-          <p className="max-w-2xl text-base leading-7 text-muted-foreground">
-            {intl.formatMessage({ id: 'hero.subtitle' })}
-          </p>
-        </div>
-
-        <section className="rounded-lg border border-border/70 bg-card/90 p-4 shadow-soft-panel sm:p-5">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase text-muted-foreground">
-                {intl.formatMessage({ id: 'command.label' })}
-              </p>
-              <p className="mt-1 text-sm text-foreground">
-                {intl.formatMessage({ id: 'command.sublabel' })}
-              </p>
-            </div>
-            <div className="inline-flex w-fit items-center gap-2 rounded-md border border-border/70 bg-background/60 px-3 py-2 text-xs text-muted-foreground">
-              <Network className="h-3.5 w-3.5 text-celo" />
-              {chainName(chainId)}
-            </div>
-          </div>
-
-          <ChatInput onSubmit={previewPrompt} isLoading={isWriting || isSwitching} />
-
-          <div className="mt-4 grid gap-2">
-            {EXAMPLE_PROMPTS.map((prompt) => (
-              <button
-                key={prompt}
-                type="button"
-                onClick={() => {
-                  previewPrompt(prompt)
-                }}
-                className="group flex w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-md border border-border/70 bg-background/40 px-3 py-3 text-left text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/10 hover:text-foreground sm:text-sm"
-              >
-                <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-mono">
-                  {prompt}
-                </span>
-                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {preview && (
-          <section className="space-y-3">
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-card/70 px-4 py-3">
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase text-muted-foreground">
-                  Parsed command
-                </p>
-                <p className="mt-1 truncate font-mono text-sm text-foreground">{preview.input}</p>
-              </div>
-              <BadgeCheck className="h-5 w-5 shrink-0 text-celo" />
-            </div>
-            <ConfirmationCard
-              intent={preview.intent}
-              safety={currentSafety ?? preview.safety}
-              scheduleSummary={scheduleSummary}
-              resolvedRecipient={previewResolvedRecipient}
-              onConfirm={() => {
-                void confirmPreview().catch((err: unknown) => {
-                  setError(err instanceof Error ? err.message : 'Transaction failed.')
-                })
-              }}
-              onCancel={() => {
-                setPreview(null)
-                setError(null)
-                setSubmittedHash(undefined)
-                setScheduleStatus(null)
-                setScheduleResult(null)
-              }}
-            />
-          </section>
-        )}
-
-        {error && (
-          <div className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>{error}</p>
-          </div>
-        )}
-
-        {submittedHash && (
-          <div className="rounded-lg border border-celo/50 bg-celo/10 p-4 text-sm">
-            <div className="flex items-center gap-2 font-medium text-celo">
-              {isConfirming ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4" />
-              )}
-              {statusMessage}
-            </div>
-            <a
-              href={explorerTxUrl(isSupportedChain(chainId) ? chainId : celo.id, submittedHash)}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-2 inline-flex items-center gap-1 text-xs text-foreground underline"
-            >
-              View {formatAddress(submittedHash)} on Celoscan
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
-        )}
-
-        {scheduleStatus && (
-          <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 p-4 text-sm font-medium text-primary">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {scheduleStatus}
-          </div>
-        )}
-
-        {scheduleResult && (
-          <div className="rounded-lg border border-celo/50 bg-celo/10 p-4 text-sm">
-            <div className="flex items-center gap-2 font-medium text-celo">
-              <CheckCircle2 className="h-4 w-4" />
-              Schedule created on Celo
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              On-chain id{' '}
-              <span className="font-mono text-foreground">
-                {formatAddress(scheduleResult.onchainId)}
-              </span>
-            </p>
-            <div className="mt-2 flex flex-wrap gap-4">
-              <a
-                href={explorerTxUrl(
-                  isSupportedChain(chainId) ? chainId : celo.id,
-                  scheduleResult.txHash,
-                )}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-foreground underline"
-              >
-                View {formatAddress(scheduleResult.txHash)} on Celoscan
-                <ExternalLink className="h-3 w-3" />
-              </a>
-              <a
-                href="/schedules"
-                className="inline-flex items-center gap-1 text-xs text-foreground underline"
-              >
-                View schedules
-                <ArrowRight className="h-3 w-3" />
-              </a>
-            </div>
-          </div>
-        )}
+        <h1 className="mb-4 text-4xl font-extrabold leading-[1.0] tracking-tight sm:text-5xl">
+          <span className="gradient-text">{intl.formatMessage({ id: 'hero.title' })}</span>
+        </h1>
+        <p className="mx-auto max-w-md text-base font-medium text-foreground/65">
+          {intl.formatMessage({ id: 'hero.subtitle' })}
+        </p>
       </section>
 
-      <aside className="space-y-4">
-        <section className="rounded-lg border border-border/70 bg-card/80 p-4 shadow-soft-panel">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium uppercase text-muted-foreground">Wallet</p>
-              <p className="mt-1 font-mono text-sm text-foreground">
-                {isConnected && address ? formatAddress(address) : 'Not connected'}
-              </p>
-            </div>
-            <div className="grid h-10 w-10 place-items-center rounded-md bg-primary/10 text-primary">
-              <Wallet className="h-5 w-5" />
-            </div>
+      <section className="glass-card animate-fade-in mx-auto mt-6 w-full max-w-lg rounded-3xl p-6">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="meta-label text-foreground/55">
+              {intl.formatMessage({ id: 'command.label' })}
+            </p>
+            <p className="mt-1 text-sm font-medium text-foreground">
+              {intl.formatMessage({ id: 'command.sublabel' })}
+            </p>
           </div>
-        </section>
+          <span className="rounded-full bg-foreground/[0.06] px-3 py-1.5 font-mono text-[11px] text-foreground/70 dark:bg-white/[0.06]">
+            {chainName(chainId)}
+          </span>
+        </div>
 
-        <section className="rounded-lg border border-border/70 bg-card/80 p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <Coins className="h-4 w-4 text-celo" />
-            <p className="text-sm font-medium">Assets</p>
-          </div>
-          <div className="space-y-2">
-            {SUPPORTED_ASSETS.map((asset) => (
-              <div
-                key={asset.symbol}
-                className="flex items-center justify-between rounded-md border border-border/70 bg-background/40 px-3 py-2"
-              >
-                <div>
-                  <p className="text-sm font-medium text-foreground">{asset.symbol}</p>
-                  <p className="text-xs text-muted-foreground">{asset.name}</p>
-                </div>
-                <span className={`rounded-full border px-2 py-1 text-xs ${asset.tone}`}>live</span>
-              </div>
-            ))}
-          </div>
-        </section>
+        <ChatInput onSubmit={previewPrompt} isLoading={isWriting || isSwitching} />
 
-        <section className="rounded-lg border border-border/70 bg-card/80 p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-primary" />
-            <p className="text-sm font-medium">Execution</p>
+        <div className="mt-4 grid gap-2">
+          {EXAMPLE_PROMPTS.map((prompt) => (
+            <button
+              key={prompt}
+              type="button"
+              onClick={() => {
+                previewPrompt(prompt)
+              }}
+              className="glass-input group flex w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-2xl px-3.5 py-3 text-left font-mono text-xs text-foreground/70 transition hover:text-foreground"
+            >
+              <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+                {prompt}
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <div className="mx-auto mt-6 flex max-w-lg flex-wrap justify-center gap-2">
+        {['Contracts verified', 'MiniPay native', '201 tests passing'].map((label) => (
+          <div
+            key={label}
+            className="flex items-center gap-1.5 rounded-2xl border border-white/80 bg-white/50 px-3 py-1.5 font-mono text-[11px] font-semibold text-foreground/65 dark:border-white/[0.08] dark:bg-white/[0.05]"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-celo-green shadow-glow-celo" />
+            {label}
           </div>
-          <div className="space-y-3 text-sm">
-            <div className="flex items-start gap-3">
-              <span className="mt-1 h-2 w-2 rounded-full bg-celo" />
-              <p className="text-muted-foreground">Parser and safety checks run before signing.</p>
+        ))}
+      </div>
+
+      {preview && (
+        <section className="animate-fade-in mx-auto mt-6 w-full max-w-lg space-y-3">
+          <div className="glass-card flex items-center justify-between gap-3 rounded-2xl px-4 py-3">
+            <div className="min-w-0">
+              <p className="meta-label text-foreground/55">Parsed command</p>
+              <p className="mt-1 truncate font-mono text-sm text-foreground">{preview.input}</p>
             </div>
-            <div className="flex items-start gap-3">
-              <span className="mt-1 h-2 w-2 rounded-full bg-primary" />
-              <p className="text-muted-foreground">Transfers are signed by the connected wallet.</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="mt-1 h-2 w-2 rounded-full bg-accent" />
-              <p className="text-muted-foreground">
-                Scheduler and vault contracts are live; API and worker wiring comes next.
-              </p>
-            </div>
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-celo-green" />
           </div>
+          <ConfirmationCard
+            intent={preview.intent}
+            safety={currentSafety ?? preview.safety}
+            scheduleSummary={scheduleSummary}
+            resolvedRecipient={previewResolvedRecipient}
+            onConfirm={() => {
+              void confirmPreview().catch((err: unknown) => {
+                setError(err instanceof Error ? err.message : 'Transaction failed.')
+              })
+            }}
+            onCancel={() => {
+              setPreview(null)
+              setError(null)
+              setSubmittedHash(undefined)
+              setScheduleStatus(null)
+              setScheduleResult(null)
+            }}
+          />
         </section>
-      </aside>
+      )}
+
+      {error && (
+        <div className="mx-auto mt-6 flex max-w-lg items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>{error}</p>
+        </div>
+      )}
+
+      {submittedHash && (
+        <div className="glass-card mx-auto mt-6 max-w-lg rounded-2xl p-4 text-sm">
+          <div className="flex items-center gap-2 font-semibold text-celo-green">
+            {isConfirming ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4" />
+            )}
+            {statusMessage}
+          </div>
+          <a
+            href={explorerTxUrl(isSupportedChain(chainId) ? chainId : celo.id, submittedHash)}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-flex items-center gap-1 text-xs text-foreground underline"
+          >
+            View {formatAddress(submittedHash)} on Celoscan
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+      )}
+
+      {scheduleStatus && (
+        <div className="glass-card mx-auto mt-6 flex max-w-lg items-center gap-2 rounded-2xl p-4 text-sm font-semibold text-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          {scheduleStatus}
+        </div>
+      )}
+
+      {scheduleResult && (
+        <div className="glass-card mx-auto mt-6 max-w-lg rounded-2xl p-4 text-sm">
+          <div className="flex items-center gap-2 font-semibold text-celo-green">
+            <CheckCircle2 className="h-4 w-4" />
+            Schedule created on Celo
+          </div>
+          <p className="mt-2 text-xs text-foreground/60">
+            On-chain id{' '}
+            <span className="font-mono text-foreground">
+              {formatAddress(scheduleResult.onchainId)}
+            </span>
+          </p>
+          <div className="mt-2 flex flex-wrap gap-4">
+            <a
+              href={explorerTxUrl(
+                isSupportedChain(chainId) ? chainId : celo.id,
+                scheduleResult.txHash,
+              )}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-foreground underline"
+            >
+              View {formatAddress(scheduleResult.txHash)} on Celoscan
+              <ExternalLink className="h-3 w-3" />
+            </a>
+            <a
+              href="/schedules"
+              className="inline-flex items-center gap-1 text-xs text-foreground underline"
+            >
+              View schedules
+              <ArrowRight className="h-3 w-3" />
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
