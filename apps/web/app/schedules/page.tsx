@@ -75,7 +75,10 @@ function ScheduleCard({ scheduleId, chainId }: { scheduleId: Hex; chainId: numbe
         : 'bg-foreground/[0.08] text-foreground/55 dark:bg-white/[0.08]'
 
   return (
-    <div className="glass-card animate-fade-in space-y-3 rounded-2xl p-4">
+    <div
+      id={`schedule-${scheduleId}`}
+      className="glass-card animate-fade-in scroll-mt-24 space-y-3 rounded-2xl p-4"
+    >
       <div className="flex items-start gap-3.5">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-accent-gradient font-bold text-white">
           {schedule.recipient.slice(2, 3).toUpperCase()}

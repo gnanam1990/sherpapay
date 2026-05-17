@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Send, Terminal } from 'lucide-react'
 import { VoiceInput } from '@/components/voice-input'
 import { useLocale } from '@/components/i18n-provider'
@@ -15,6 +15,15 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
   const [interim, setInterim] = useState('')
   const [voiceStatus, setVoiceStatus] = useState('')
   const { locale } = useLocale()
+
+  // Seed from a ?prefill= deep link (e.g. "Add subscription"). Read from
+  // window (not next/navigation useSearchParams) to avoid forcing a
+  // Suspense/CSR bailout on the home route. The user still reviews and
+  // submits — never auto-fired.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get('prefill')
+    if (p) setInput(p)
+  }, [])
 
   const handleSubmit = useCallback(
     (e: React.SyntheticEvent<HTMLFormElement>) => {
