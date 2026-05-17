@@ -677,7 +677,7 @@ export function HomeFlow() {
       </section>
 
       <div className="mx-auto mt-6 flex max-w-lg flex-wrap justify-center gap-2">
-        {['Contracts verified', 'MiniPay native', '201 tests passing'].map((label) => (
+        {['Contracts verified', 'MiniPay native', 'Real on-chain txs'].map((label) => (
           <div
             key={label}
             className="flex items-center gap-1.5 rounded-2xl border border-white/80 bg-white/50 px-3 py-1.5 font-mono text-[11px] font-semibold text-foreground/65 dark:border-white/[0.08] dark:bg-white/[0.05]"
