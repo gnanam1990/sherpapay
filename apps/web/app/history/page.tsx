@@ -44,7 +44,7 @@ function HistoryView() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="mx-auto flex max-w-3xl items-center gap-2 text-sm text-foreground/60">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading history…
       </div>
     )
@@ -52,9 +52,9 @@ function HistoryView() {
 
   if (unavailable) {
     return (
-      <div className="rounded-lg border border-border/70 bg-card/80 p-5 text-sm">
-        <p className="font-medium text-foreground">History temporarily unavailable</p>
-        <p className="mt-1 text-muted-foreground">
+      <div className="glass-card mx-auto max-w-3xl rounded-2xl p-5 text-sm">
+        <p className="font-bold text-foreground">History temporarily unavailable</p>
+        <p className="mt-1 text-foreground/60">
           Celoscan rate-limited this keyless request. Try again shortly, or view your full history
           on Celoscan.
         </p>
@@ -83,16 +83,16 @@ function HistoryView() {
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-foreground">History</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">History</h1>
         <select
           value={filter}
           onChange={(e) => {
             setFilter(e.target.value as Filter)
           }}
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+          className="glass-input rounded-2xl px-3 py-2 font-mono text-xs text-foreground"
         >
           {FILTERS.map((f) => (
-            <option key={f} value={f} className="bg-background">
+            <option key={f} value={f} className="bg-background font-sans">
               {f === 'all' ? 'All' : f === 'scheduler' ? 'Schedule' : f}
             </option>
           ))}
@@ -100,28 +100,28 @@ function HistoryView() {
       </div>
 
       {filtered.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No matching transactions.</p>
+        <p className="text-sm text-foreground/55">No matching transactions.</p>
       ) : (
-        <ul className="divide-y divide-border/70 rounded-lg border border-border/70 bg-card/80">
+        <ul className="glass-card divide-y divide-foreground/[0.06] overflow-hidden rounded-2xl dark:divide-white/[0.06]">
           {filtered.map((i) => {
             const Icon =
               i.kind === 'scheduler' ? Repeat : i.direction === 'out' ? ArrowUpRight : ArrowDownLeft
             return (
               <li
                 key={`${i.hash}-${i.token}-${i.direction}`}
-                className="flex items-center gap-3 p-3"
+                className="flex items-center gap-3 p-3.5"
               >
                 <span
                   className={
                     i.direction === 'out'
-                      ? 'grid h-9 w-9 place-items-center rounded-md bg-destructive/10 text-destructive'
-                      : 'grid h-9 w-9 place-items-center rounded-md bg-celo/10 text-celo'
+                      ? 'grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-destructive/10 text-destructive'
+                      : 'grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-celo-green/15 text-celo-green-dark dark:text-celo-green-light'
                   }
                 >
                   <Icon className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground">
+                  <p className="text-sm font-semibold text-foreground">
                     {i.kind === 'scheduler'
                       ? 'Schedule execution'
                       : i.direction === 'out'
@@ -131,7 +131,7 @@ function HistoryView() {
                           : 'Self'}{' '}
                     {i.amount} {i.token}
                   </p>
-                  <p className="truncate font-mono text-xs text-muted-foreground">
+                  <p className="truncate font-mono text-[11px] text-foreground/55">
                     {i.direction === 'out' ? 'to' : 'from'} {formatAddress(i.counterparty)} ·{' '}
                     {relativeTime(i.timestamp)}
                   </p>
@@ -141,7 +141,7 @@ function HistoryView() {
                   target="_blank"
                   rel="noreferrer"
                   aria-label="View on Celoscan"
-                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-foreground/50 transition-colors hover:text-foreground"
                 >
                   <ExternalLink className="h-4 w-4" />
                 </a>
@@ -158,7 +158,7 @@ function HistoryView() {
           onClick={() => {
             loadMore()
           }}
-          className="mx-auto block rounded-md border border-border/80 px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+          className="mx-auto block rounded-2xl bg-foreground/[0.06] px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-foreground/[0.12] disabled:opacity-50 dark:bg-white/[0.06] dark:hover:bg-white/[0.12]"
         >
           {fetching ? 'Loading…' : 'Load more'}
         </button>
