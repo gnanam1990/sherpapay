@@ -22,8 +22,13 @@ import {
   DEFAULT_SCHEDULE_CYCLES,
   scheduleEndTime,
   scheduleEscrowTotal,
+  vaultAbi,
+  VAULT_ADDRESS,
+  frequencyToSeconds,
+  goalTargetDate,
 } from '@sherpapay/celo'
 import { useCreateSchedule, useFundSchedule } from '@/lib/scheduler-hooks'
+import { useCreateGoal, useGoalContribution } from '@/lib/vault-hooks'
 import {
   amountToWei,
   formatAddress,
@@ -36,10 +41,11 @@ import {
   type SafetyResult,
 } from '@sherpapay/core'
 import { useIntl } from 'react-intl'
-import { parse } from '@sherpapay/parser'
+import { parse, validateGoalIntent, type GoalValidation } from '@sherpapay/parser'
 import { runSafetyChecks } from '@sherpapay/safety'
 import { ChatInput } from '@/components/chat-input'
 import { ConfirmationCard } from '@/components/confirmation-card'
+import { GoalConfirmationCard, type GoalSummary } from '@/components/goal-confirmation-card'
 import { useLocalCurrency } from '@/lib/use-fx'
 import { useAliases } from '@/lib/use-aliases'
 import { TOKENS } from '@/lib/wagmi'
@@ -112,9 +118,6 @@ function intervalSeconds(frequency: Frequency): bigint | null {
 }
 
 function describeUnsupportedIntent(intent: Intent): string | null {
-  if (intent.kind === 'save') {
-    return 'SherpaPayVault is live on Celo. Goal creation is waiting on the wallet transaction flow.'
-  }
   if (intent.kind === 'cancel' || intent.kind === 'pause' || intent.kind === 'resume') {
     return 'Schedule management is waiting on the production scheduler API and indexer.'
   }
@@ -150,6 +153,8 @@ export function HomeFlow() {
   const publicClient = usePublicClient()
   const createSchedule = useCreateSchedule()
   const fundSchedule = useFundSchedule()
+  const createGoal = useCreateGoal()
+  const contributeToGoal = useGoalContribution()
   const [preview, setPreview] = useState<PreviewState | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [submittedHash, setSubmittedHash] = useState<Address | undefined>()
@@ -157,6 +162,12 @@ export function HomeFlow() {
   const [scheduleResult, setScheduleResult] = useState<{
     onchainId: Address
     txHash: Address
+  } | null>(null)
+  const [goalStatus, setGoalStatus] = useState<string | null>(null)
+  const [goalResult, setGoalResult] = useState<{
+    goalId: Address
+    txHash: Address
+    funded: boolean
   } | null>(null)
   const previewedSendIntent = preview?.intent.kind === 'send' ? preview.intent : null
   const targetChainId = isSupportedChain(chainId) ? chainId : celo.id
@@ -237,11 +248,23 @@ export function HomeFlow() {
     return resolved && isValidAddress(resolved) ? (resolved as Address) : null
   }
 
+  function resetPreview() {
+    setPreview(null)
+    setError(null)
+    setSubmittedHash(undefined)
+    setScheduleStatus(null)
+    setScheduleResult(null)
+    setGoalStatus(null)
+    setGoalResult(null)
+  }
+
   function previewPrompt(input: string) {
     setError(null)
     setSubmittedHash(undefined)
     setScheduleStatus(null)
     setScheduleResult(null)
+    setGoalStatus(null)
+    setGoalResult(null)
 
     const intent = parse(input)
     if (intent.kind === 'unknown') {
@@ -273,6 +296,11 @@ export function HomeFlow() {
 
     if (intent.kind === 'schedule') {
       await confirmSchedule(intent)
+      return
+    }
+
+    if (intent.kind === 'save') {
+      await confirmGoal(intent)
       return
     }
 
@@ -428,6 +456,109 @@ export function HomeFlow() {
     }
   }
 
+  // Goal flow: createGoal moves no tokens (only stores the Goal struct), so
+  // no approval is needed to create. Approval + contribute are only for the
+  // optional first contribution. The vault treats targetDate/monthly as
+  // advisory metadata — achievement is purely funding-based.
+  async function confirmGoal(intent: Extract<Intent, { kind: 'save' }>) {
+    if (!isConnected || !address) {
+      setError(intl.formatMessage({ id: 'error.connect' }))
+      return
+    }
+
+    const validation = validateGoalIntent(intent)
+    if (!validation.ok) {
+      setError(validation.errors.join(' '))
+      return
+    }
+
+    const interval = frequencyToSeconds(intent.frequency)
+    if (interval === null) {
+      setError('Choose a recurring frequency (daily, weekly, or monthly) for a savings goal.')
+      return
+    }
+    const targetStr = intent.goal.target
+    if (!targetStr) {
+      setError('Set a target amount, e.g. "target 100".')
+      return
+    }
+    if (!publicClient) {
+      setError('No Celo RPC client available. Reconnect and try again.')
+      return
+    }
+    if (!isSupportedChain(chainId)) {
+      await switchChainAsync({ chainId: targetChainId })
+    }
+
+    const tokenAddress = TOKENS[targetChainId][intent.token] as Address
+    const contributionWei = amountToWei(intent.amount, intent.token)
+    const targetWei = amountToWei(targetStr, intent.token)
+    const cycles =
+      intent.goal.durationCycles ?? Math.ceil(Number(targetStr) / Number(intent.amount))
+    const startTime = BigInt(Math.floor(Date.now() / 1000))
+    const targetDate = goalTargetDate(startTime, interval, cycles)
+
+    const balance = await publicClient.readContract({
+      address: tokenAddress,
+      abi: erc20Abi,
+      functionName: 'balanceOf',
+      args: [address],
+    })
+
+    try {
+      setError(null)
+      setGoalResult(null)
+
+      setGoalStatus('Creating goal on Celo…')
+      const createHash = await createGoal({
+        token: tokenAddress,
+        target: targetWei,
+        monthly: contributionWei,
+        targetDate,
+        label: intent.goal.label,
+      })
+      const receipt = await publicClient.waitForTransactionReceipt({ hash: createHash })
+
+      const events = parseEventLogs({
+        abi: vaultAbi,
+        eventName: 'GoalCreated',
+        logs: receipt.logs,
+      })
+      const created = events[0]
+      if (!created) {
+        throw new Error('Goal transaction mined but GoalCreated was not emitted.')
+      }
+      const goalId = created.args.id
+
+      // Seed the first contribution only if the wallet can cover it.
+      let funded = false
+      if (contributionWei > ZERO_AMOUNT && balance >= contributionWei) {
+        setGoalStatus(
+          `Approving first contribution (${weiToAmount(contributionWei, intent.token)} ${intent.token})…`,
+        )
+        const approveHash = await writeContractAsync({
+          address: tokenAddress,
+          abi: erc20Abi,
+          functionName: 'approve',
+          args: [VAULT_ADDRESS, contributionWei],
+          chainId: targetChainId,
+        })
+        await publicClient.waitForTransactionReceipt({ hash: approveHash })
+
+        setGoalStatus('Funding first contribution…')
+        const contributeHash = await contributeToGoal(goalId, contributionWei)
+        await publicClient.waitForTransactionReceipt({ hash: contributeHash })
+        funded = true
+      }
+
+      setGoalStatus(null)
+      setGoalResult({ goalId, txHash: createHash, funded })
+    } catch (err: unknown) {
+      setGoalStatus(null)
+      setError(err instanceof Error ? err.message : 'Goal creation failed.')
+    }
+  }
+
   const previewScheduleIntent = preview?.intent.kind === 'schedule' ? preview.intent : null
   const scheduleInterval = previewScheduleIntent
     ? intervalSeconds(previewScheduleIntent.frequency)
@@ -455,6 +586,32 @@ export function HomeFlow() {
                 ),
               ) * 1000,
             ).toLocaleDateString(),
+          }
+        })()
+      : undefined
+
+  const previewGoalIntent = preview?.intent.kind === 'save' ? preview.intent : null
+  const goalValidation: GoalValidation | null = previewGoalIntent
+    ? validateGoalIntent(previewGoalIntent)
+    : null
+  const goalSummary: GoalSummary | undefined =
+    previewGoalIntent?.goal.target && previewGoalIntent.goal.durationCycles
+      ? (() => {
+          const interval = frequencyToSeconds(previewGoalIntent.frequency)
+          const cycles = previewGoalIntent.goal.durationCycles
+          const target = previewGoalIntent.goal.target
+          const byDate =
+            interval === null
+              ? '—'
+              : new Date(
+                  Number(goalTargetDate(BigInt(Math.floor(Date.now() / 1000)), interval, cycles)) *
+                    1000,
+                ).toLocaleDateString()
+          return {
+            cycles,
+            target: `${target} ${previewGoalIntent.token}`,
+            targetLocal: fx.format(Number(target)),
+            byDate,
           }
         })()
       : undefined
@@ -540,24 +697,33 @@ export function HomeFlow() {
             </div>
             <CheckCircle2 className="h-5 w-5 shrink-0 text-celo-green" />
           </div>
-          <ConfirmationCard
-            intent={preview.intent}
-            safety={currentSafety ?? preview.safety}
-            scheduleSummary={scheduleSummary}
-            resolvedRecipient={previewResolvedRecipient}
-            onConfirm={() => {
-              void confirmPreview().catch((err: unknown) => {
-                setError(err instanceof Error ? err.message : 'Transaction failed.')
-              })
-            }}
-            onCancel={() => {
-              setPreview(null)
-              setError(null)
-              setSubmittedHash(undefined)
-              setScheduleStatus(null)
-              setScheduleResult(null)
-            }}
-          />
+          {previewGoalIntent && goalValidation ? (
+            <GoalConfirmationCard
+              intent={previewGoalIntent}
+              safety={currentSafety ?? preview.safety}
+              validation={goalValidation}
+              summary={goalSummary}
+              onConfirm={() => {
+                void confirmPreview().catch((err: unknown) => {
+                  setError(err instanceof Error ? err.message : 'Goal creation failed.')
+                })
+              }}
+              onCancel={resetPreview}
+            />
+          ) : (
+            <ConfirmationCard
+              intent={preview.intent}
+              safety={currentSafety ?? preview.safety}
+              scheduleSummary={scheduleSummary}
+              resolvedRecipient={previewResolvedRecipient}
+              onConfirm={() => {
+                void confirmPreview().catch((err: unknown) => {
+                  setError(err instanceof Error ? err.message : 'Transaction failed.')
+                })
+              }}
+              onCancel={resetPreview}
+            />
+          )}
         </section>
       )}
 
@@ -627,6 +793,47 @@ export function HomeFlow() {
               className="inline-flex items-center gap-1 text-xs text-foreground underline"
             >
               View schedules
+              <ArrowRight className="h-3 w-3" />
+            </a>
+          </div>
+        </div>
+      )}
+
+      {goalStatus && (
+        <div className="glass-card mx-auto mt-6 flex max-w-lg items-center gap-2 rounded-2xl p-4 text-sm font-semibold text-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          {goalStatus}
+        </div>
+      )}
+
+      {goalResult && (
+        <div className="glass-card mx-auto mt-6 max-w-lg rounded-2xl p-4 text-sm">
+          <div className="flex items-center gap-2 font-semibold text-celo-green">
+            <CheckCircle2 className="h-4 w-4" />
+            Goal created on Celo
+          </div>
+          <p className="mt-2 text-xs text-foreground/60">
+            Goal id{' '}
+            <span className="font-mono text-foreground">{formatAddress(goalResult.goalId)}</span>
+            {goalResult.funded
+              ? ' · first contribution funded'
+              : ' · not yet funded — contribute from the Goals page'}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-4">
+            <a
+              href={explorerTxUrl(isSupportedChain(chainId) ? chainId : celo.id, goalResult.txHash)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-foreground underline"
+            >
+              View {formatAddress(goalResult.txHash)} on Celoscan
+              <ExternalLink className="h-3 w-3" />
+            </a>
+            <a
+              href="/goals"
+              className="inline-flex items-center gap-1 text-xs text-foreground underline"
+            >
+              View goals
               <ArrowRight className="h-3 w-3" />
             </a>
           </div>
