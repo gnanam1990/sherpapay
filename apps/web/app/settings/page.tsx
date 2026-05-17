@@ -3,8 +3,9 @@
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
 import { BottomNav } from '@/components/bottom-nav'
-import { Globe2, Languages, UserRoundPlus } from 'lucide-react'
+import { Globe2, Languages, Phone, UserRoundPlus } from 'lucide-react'
 import { AliasManager } from '@/components/alias-manager'
+import { PhoneManager } from '@/components/phone-manager'
 import { LanguageSwitcher } from '@/components/language-switcher'
 
 export default function SettingsPage() {
@@ -17,7 +18,7 @@ export default function SettingsPage() {
             <div>
               <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Settings</h1>
               <p className="mt-1 text-sm text-foreground/60">
-                Aliases, language, and display preferences.
+                Aliases, phone contacts, language, and display preferences.
               </p>
             </div>
 
@@ -33,6 +34,28 @@ export default function SettingsPage() {
                   </p>
                   <div className="mt-4">
                     <AliasManager />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="glass-card animate-fade-in rounded-3xl p-5">
+              <div className="flex items-start gap-4">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-accent-gradient text-white">
+                  <Phone className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-bold text-foreground">Phone contacts</h2>
+                  <p className="mt-1 text-sm text-foreground/60">
+                    Map a phone number to a wallet, then say &ldquo;send 5 cUSD to
+                    +2348012345678&rdquo;.
+                  </p>
+                  <p className="celo-tag mt-2 rounded-2xl px-3 py-2 text-[11px] leading-relaxed">
+                    Phone numbers are matched <strong>locally on this device</strong>. We don&apos;t
+                    query a network registry — coming with Self.id integration.
+                  </p>
+                  <div className="mt-4">
+                    <PhoneManager />
                   </div>
                 </div>
               </div>
