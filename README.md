@@ -23,6 +23,17 @@ SherpaPay lets users type plain English to create scheduled payments:
 → SherpaPay parses intent, verifies safety, schedules onchain, executes automatically
 ```
 
+## Why SherpaPay
+
+- **No addresses to retype.** Save "mom" once; every future command resolves it.
+- **Recurring, hands-off.** A schedule is funded once and a permissionless
+  on-chain worker executes each due payment — no app open, no reminders.
+- **Self-custodial.** Escrow lives in an audited-style Solidity contract on
+  Celo; cancel anytime and the unspent balance is refunded to you.
+- **Built for the markets MiniPay serves.** English/Swahili/Spanish/Hindi,
+  local-currency equivalents (₦/KSh/₹…), works in the MiniPay webview.
+- **Cheap.** A weekly 0.01 cUSD schedule for 12 cycles costs cents of CELO gas.
+
 ## MiniPay Native Integration
 
 SherpaPay is built MiniPay-first. When the app is opened inside the MiniPay
@@ -53,22 +64,59 @@ cannot be exercised in a normal desktop browser).
 
 ## Features
 
-### ✓ Live
+- **Natural-language input** — type a payment in plain English
+- **Direct sends** — cUSD / cEUR / USDT transfers on Celo
+- **Scheduled payments** — `schedulePayment` + prefunded escrow, executed
+  on-chain by a permissionless worker; pause / resume / cancel + refund
+- **Safety checks** — multi-ring validation before any signature
+- **MiniPay native** — auto-detect + auto-connect in the MiniPay webview
+- **Recipient aliases** — "mom" → `0x…`, per-wallet, on-device
+- **Local-currency equivalents** — ₦ / KSh / GH₵ / MX$ / ₱ / ₹ via CoinGecko
+- **i18n** — English, Kiswahili, Español, हिन्दी
+- **Transaction history** — native + token + schedule activity from Celoscan
+- **Savings vault** — contribute / withdraw against on-chain goals
 
-- **Natural Language Input** — Type what you want in plain English
-- **Direct Sends** — cUSD, cEUR, USDT transfers on Celo
-- **Safety Rings** — Multi-layer safety checks before any transaction
-- **MiniPay Native** — Auto-detect + auto-connect inside the MiniPay app
+## Roadmap
 
-### ⏳ Coming soon (Phase 2)
+Honest status — what is shipped vs not.
 
-- **Scheduled Payments** — Daily, weekly, monthly recurring transfers
-- **Savings Goals** — Goal-based savings with auto-DCA
+**Shipped**
 
-### ⏳ Coming soon (Phase 4)
+- [x] Natural-language parser + multi-ring safety
+- [x] Live cUSD/cEUR/USDT sends (mainnet, smoke-tested)
+- [x] On-chain scheduled payments — create, fund, pause/resume/cancel
+- [x] Contract-driven worker — real `executeDuePayment`/`executeBatch`
+      (mainnet smoke-tested; no faked executions anywhere)
+- [x] `/schedules` and `/goals` read live contract state
+- [x] MiniPay detection + auto-connect
+- [x] i18n (en/sw/es/hi) + local-currency display
+- [x] Per-wallet recipient aliases (on-device)
+- [x] Transaction history via Celoscan
 
-- **Recipient Aliases** — "mom" maps to a wallet address
-- **Local Currency** — Display amounts in NGN, KES, GHS, MXN, PHP, INR
+**Coming soon**
+
+- [ ] Create savings goals from a natural-language command
+      (the vault + `/goals` actions are live; the "save …" intent is
+      not yet wired to `createGoal`)
+- [ ] User-selectable display currency (locale-derived default for now)
+- [ ] Optional server sync for aliases/history (currently on-device only)
+- [ ] CI test matrix, issue templates, expanded coverage
+- [ ] Demo video
+
+## Screenshots
+
+> Captured separately and committed under `docs/screenshots/`
+> (see [`docs/screenshots/README.md`](docs/screenshots/README.md) for the
+> exact shot list). Not embedded here until the real images are added —
+> no placeholder graphics.
+
+| Screen      | File                             |
+| ----------- | -------------------------------- |
+| Home / send | `docs/screenshots/home.png`      |
+| Schedules   | `docs/screenshots/schedules.png` |
+| Goals       | `docs/screenshots/goals.png`     |
+| History     | `docs/screenshots/history.png`   |
+| Settings    | `docs/screenshots/settings.png`  |
 
 ## Tech Stack
 
