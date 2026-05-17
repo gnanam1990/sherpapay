@@ -34,6 +34,8 @@ export type Intent =
       readonly endDate?: Date
       /** Set only when the recipient was typed as an international phone number. */
       readonly recipientType?: 'phone'
+      /** Set only when a category keyword was present in the command. */
+      readonly category?: ScheduleCategory
     }
   | {
       readonly kind: 'save'
@@ -55,6 +57,14 @@ export type Intent =
   | { readonly kind: 'unknown'; readonly raw: string }
 
 // ─── Schedule Types ──────────────────────────────────────────────────
+
+/**
+ * App-level classification of a recurring schedule. NOT stored on-chain
+ * (the scheduler contract is immutable and has no category) — it is
+ * either parsed from the command keyword or derived from frequency for
+ * display in the subscriptions view.
+ */
+export type ScheduleCategory = 'subscription' | 'savings' | 'transfer' | 'rent'
 
 export enum ScheduleStatus {
   Active = 0,
@@ -78,6 +88,8 @@ export interface Schedule {
   readonly status: ScheduleStatus
   readonly lastExecution: number
   readonly nextExecution: number
+  /** App-level only (see {@link ScheduleCategory}); never read from chain. */
+  readonly category?: ScheduleCategory
 }
 
 // ─── Goal Types ──────────────────────────────────────────────────────

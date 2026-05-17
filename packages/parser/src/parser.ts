@@ -1,4 +1,4 @@
-import type { Intent, TokenSymbol, Frequency } from '@sherpapay/core'
+import type { Intent, TokenSymbol, Frequency, ScheduleCategory } from '@sherpapay/core'
 
 // Native Celo symbols + the words people actually say / dictate.
 // cUSD/cEUR first so they win over the bare USD/EUR aliases.
@@ -72,6 +72,36 @@ function parsePhoneRecipient(str: string): string | undefined {
   if (!match?.[1]) return undefined
   const normalized = normalizePhone(match[1])
   return /^\+\d{8,15}$/.test(normalized) ? normalized : undefined
+}
+
+/**
+ * Explicit category keyword in the command, if any. `undefined` when no
+ * keyword is present — callers keep the schedule intent shape minimal
+ * and derive a default from frequency via {@link categoryForSchedule}.
+ */
+function parseCategory(str: string): ScheduleCategory | undefined {
+  const l = str.toLowerCase()
+  if (/\brent\b/.test(l)) return 'rent'
+  if (/\bsubscriptions?\b|\bsubscribe\b/.test(l)) return 'subscription'
+  if (/\bsavings?\b/.test(l)) return 'savings'
+  if (/\bfee\b/.test(l)) return 'subscription'
+  return undefined
+}
+
+const WEEK_SECONDS = 604_800
+
+/**
+ * View-side category for an on-chain schedule (which stores no
+ * category): an explicit parsed category wins; otherwise weekly/monthly
+ * recurring is treated as a subscription, anything shorter as a plain
+ * transfer.
+ */
+export function categoryForSchedule(
+  intervalSeconds: number,
+  explicit?: ScheduleCategory,
+): ScheduleCategory {
+  if (explicit) return explicit
+  return intervalSeconds >= WEEK_SECONDS ? 'subscription' : 'transfer'
 }
 
 function parseFrequency(str: string): Frequency | undefined {
@@ -170,6 +200,7 @@ export function parse(input: string): Intent {
     const phoneTag = phone ? { recipientType: 'phone' as const } : {}
 
     if (frequency) {
+      const category = parseCategory(trimmed)
       return {
         kind: 'schedule',
         recipient: recipient ?? 'unknown',
@@ -177,6 +208,7 @@ export function parse(input: string): Intent {
         token: token ?? 'cUSD',
         frequency,
         ...phoneTag,
+        ...(category ? { category } : {}),
       }
     }
 

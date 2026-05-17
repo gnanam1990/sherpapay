@@ -3,6 +3,7 @@ export type {
   Frequency,
   Intent,
   Schedule,
+  ScheduleCategory,
   Goal,
   SafetyContext,
   SafetyCheck,
