@@ -29,7 +29,7 @@ export function AliasManager() {
 
   if (!connected) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-foreground/55">
         Connect a wallet to manage its recipient aliases.
       </p>
     )
@@ -44,7 +44,7 @@ export function AliasManager() {
             setName(e.target.value)
           }}
           placeholder="Name (e.g. mom)"
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+          className="glass-input rounded-2xl px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/40"
         />
         <input
           value={address}
@@ -52,12 +52,12 @@ export function AliasManager() {
             setAddress(e.target.value)
           }}
           placeholder="0x wallet address"
-          className="rounded-md border border-input bg-background px-3 py-2 font-mono text-sm text-foreground"
+          className="glass-input rounded-2xl px-3.5 py-2.5 font-mono text-sm text-foreground placeholder:text-foreground/40"
         />
         <button
           type="button"
           onClick={onAdd}
-          className="inline-flex items-center justify-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          className="inline-flex items-center justify-center gap-1 rounded-2xl bg-accent-gradient px-4 py-2.5 text-sm font-bold text-white shadow-glow-accent transition hover:opacity-95"
         >
           <UserRoundPlus className="h-4 w-4" /> Add
         </button>
@@ -66,16 +66,22 @@ export function AliasManager() {
       {error && <p className="text-xs text-destructive">{error}</p>}
 
       {entries.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-foreground/55">
           No aliases yet. Add one, then say e.g. &ldquo;send 5 cUSD to mom&rdquo;.
         </p>
       ) : (
-        <ul className="divide-y divide-border/70 rounded-md border border-border/70">
+        <ul className="space-y-2">
           {entries.map((entry) => (
-            <li key={entry.name} className="flex items-center justify-between gap-3 px-3 py-2">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground">{entry.name}</p>
-                <p className="truncate font-mono text-xs text-muted-foreground">
+            <li
+              key={entry.name}
+              className="flex items-center gap-3 rounded-2xl bg-foreground/[0.04] px-3.5 py-2.5 dark:bg-white/[0.04]"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-gradient text-sm font-bold text-white">
+                {entry.name.slice(0, 1).toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-foreground">{entry.name}</p>
+                <p className="truncate font-mono text-[11px] text-foreground/55">
                   {formatAddress(entry.address)}
                 </p>
               </div>
@@ -85,7 +91,7 @@ export function AliasManager() {
                 onClick={() => {
                   remove(entry.name)
                 }}
-                className="rounded-md border border-destructive/50 p-2 text-destructive transition-colors hover:bg-destructive/10"
+                className="rounded-xl border border-destructive/50 p-2 text-destructive transition hover:bg-destructive/10"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
