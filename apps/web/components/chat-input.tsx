@@ -16,11 +16,19 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
   const [voiceStatus, setVoiceStatus] = useState('')
   const { locale } = useLocale()
 
-  // Seed from a ?prefill= deep link (e.g. "Add subscription"). Read from
-  // window (not next/navigation useSearchParams) to avoid forcing a
-  // Suspense/CSR bailout on the home route. The user still reviews and
-  // submits — never auto-fired.
+  // Seed from a deep link (e.g. "Add subscription"). Prefer a one-shot
+  // sessionStorage handoff (cleared on read → keeps the URL clean and
+  // works on every navigation, not just first mount); fall back to a
+  // ?prefill= query so links remain shareable. Read from window (not
+  // next/navigation useSearchParams) to avoid a Suspense/CSR bailout on
+  // the home route. The user still reviews and submits — never auto-fired.
   useEffect(() => {
+    const handoff = window.sessionStorage.getItem('sherpapay.prefill')
+    if (handoff) {
+      window.sessionStorage.removeItem('sherpapay.prefill')
+      setInput(handoff)
+      return
+    }
     const p = new URLSearchParams(window.location.search).get('prefill')
     if (p) setInput(p)
   }, [])

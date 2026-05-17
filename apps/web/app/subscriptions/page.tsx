@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useAccount, useChainId } from 'wagmi'
 import { celo, celoAlfajores } from 'wagmi/chains'
 import { Repeat, Plus, ArrowRight, CalendarClock } from 'lucide-react'
@@ -88,9 +89,19 @@ function fmtDate(unixSeconds: bigint): string {
   return new Date(Number(unixSeconds) * 1000).toLocaleDateString()
 }
 
+const PREFILL_TEMPLATE = 'send 5 cUSD to NAME every month'
+
 function SubscriptionsView() {
+  const router = useRouter()
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
+
+  function addSubscription() {
+    // One-shot handoff: ChatInput reads + clears this on mount. No fake
+    // recipient — "NAME" is an obvious placeholder the user replaces.
+    window.sessionStorage.setItem('sherpapay.prefill', PREFILL_TEMPLATE)
+    router.push('/')
+  }
   const { data: scheduleIds, isLoading } = useUserSchedules(address)
   const [subs, setSubs] = useState<Record<string, Sub | null>>({})
 
@@ -126,8 +137,6 @@ function SubscriptionsView() {
     groups.set(key, [...(groups.get(key) ?? []), s])
   }
 
-  const prefill = encodeURIComponent('send 5 cUSD to alice every month')
-
   return (
     <div className="stagger mx-auto grid w-full max-w-3xl gap-3">
       {ids.map((id) => (
@@ -144,12 +153,13 @@ function SubscriptionsView() {
             on-chain schedules — not a separate contract.
           </p>
         </div>
-        <Link
-          href={`/?prefill=${prefill}`}
+        <button
+          type="button"
+          onClick={addSubscription}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-2xl bg-accent-gradient px-4 py-2.5 text-sm font-bold text-white shadow-glow-accent transition hover:opacity-95"
         >
           <Plus className="h-4 w-4" /> Add subscription
-        </Link>
+        </button>
       </div>
 
       {isLoading ? (
@@ -159,8 +169,8 @@ function SubscriptionsView() {
           <CalendarClock className="mx-auto mb-3 h-8 w-8 text-foreground/40" />
           <p className="text-sm text-foreground/70">
             No weekly or monthly schedules yet. &ldquo;Add subscription&rdquo; opens the command
-            prefilled with an editable template like{' '}
-            <span className="font-mono">send 5 cUSD to alice every month</span>.
+            prefilled with an editable template:{' '}
+            <span className="font-mono">{PREFILL_TEMPLATE}</span>.
           </p>
         </div>
       ) : (
