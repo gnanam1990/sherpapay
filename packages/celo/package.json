@@ -22,15 +22,8 @@
     "@sherpapay/core": "workspace:*",
     "viem": "^2.0.0"
   },
-  "peerDependencies": {
-    "react": ">=18",
-    "wagmi": ">=2"
-  },
   "devDependencies": {
-    "@types/react": "^19.0.0",
-    "react": "^19.0.0",
     "typescript": "^5.5.0",
-    "vitest": "^2.0.0",
-    "wagmi": "^2.0.0"
+    "vitest": "^2.0.0"
   }
 }

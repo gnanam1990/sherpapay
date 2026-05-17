@@ -120,8 +120,12 @@ export function getAllTokenAddresses(chainId: number) {
 }
 
 // ─── SherpaPay Contract ABIs ─────────────────────────────────────────
+//
+// ABIs + pure helpers only. React/wagmi hooks intentionally live in the
+// web app (apps/web/lib/*-hooks.ts): a workspace package that imports
+// wagmi resolves a second wagmi instance under pnpm, whose React context
+// is not the app's WagmiProvider — which broke Next prerender. Keeping
+// this package zero-React avoids that dual-instance hazard entirely.
 
 export * from './scheduler-abi.js'
-export * from './scheduler-hooks.js'
 export * from './vault-abi.js'
-export * from './vault-hooks.js'

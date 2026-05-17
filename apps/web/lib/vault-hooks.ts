@@ -2,8 +2,8 @@
 
 import { useReadContract, useWriteContract } from 'wagmi'
 import type { Address, Hex } from 'viem'
-import { vaultAbi, VAULT_ADDRESS } from './vault-abi.js'
-import type { WriteAction } from './scheduler-hooks.js'
+import { vaultAbi, VAULT_ADDRESS } from '@sherpapay/celo'
+import type { WriteAction } from './scheduler-hooks'
 
 export interface CreateGoalParams {
   token: Address

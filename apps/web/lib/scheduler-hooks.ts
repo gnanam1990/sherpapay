@@ -1,8 +1,10 @@
 'use client'
 
+// wagmi hooks live in the app (not @sherpapay/celo) so there is exactly
+// one wagmi instance — the app's WagmiProvider. See packages/celo index.ts.
 import { useReadContract, useWriteContract } from 'wagmi'
 import type { Address, Hex } from 'viem'
-import { schedulerAbi, SCHEDULER_ADDRESS } from './scheduler-abi.js'
+import { schedulerAbi, SCHEDULER_ADDRESS } from '@sherpapay/celo'
 
 export interface CreateScheduleParams {
   recipient: Address
@@ -19,16 +21,10 @@ export interface CreateScheduleParams {
   maxFailures: number
 }
 
-/**
- * A thin, declaration-portable wrapper around a single contract write.
- * We expose only primitive-typed fields so package `.d.ts` emit does not
- * reference unnameable deep @wagmi/core types (TS2742).
- */
+/** A callable wrapper around a single contract write, with status fields. */
 export interface WriteAction<TArgs extends unknown[]> {
   (...args: TArgs): Promise<Hex>
-  /** Tx in flight. */
   isPending: boolean
-  /** Last error, if any. */
   error: Error | null
 }
 
