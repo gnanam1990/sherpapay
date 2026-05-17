@@ -44,7 +44,7 @@ function GoalCard({ goalId, chainId }: { goalId: Hex; chainId: number }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-card/70 p-4 text-sm text-muted-foreground">
+      <div className="glass-card flex items-center gap-2 rounded-2xl p-4 text-sm text-foreground/60">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading goal…
       </div>
     )
@@ -82,35 +82,30 @@ function GoalCard({ goalId, chainId }: { goalId: Hex; chainId: number }) {
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-border/70 bg-card/80 p-4 shadow-soft-panel">
+    <div className="glass-card animate-fade-in space-y-3.5 rounded-3xl p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">{goal.label}</p>
-          <p className="mt-1 font-mono text-xs text-muted-foreground">{formatAddress(goalId)}</p>
+          <p className="text-[15px] font-bold text-foreground">{goal.label}</p>
+          <p className="mt-0.5 font-mono text-[11px] text-foreground/55">{formatAddress(goalId)}</p>
         </div>
-        <span className="shrink-0 rounded-full border border-border/70 bg-background/50 px-2 py-1 text-xs">
-          {goal.achieved ? 'Achieved' : `${pct.toFixed(0)}%`}
-        </span>
+        <div className="text-right font-mono text-sm font-bold text-foreground">
+          {weiToAmount(goal.currentAmount, symbol)} {symbol}
+          <span className="block text-[10px] font-medium text-foreground/50">
+            / {weiToAmount(goal.targetAmount, symbol)}
+          </span>
+        </div>
       </div>
 
-      <div className="h-2 overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-celo" style={{ width: `${Math.min(pct, 100)}%` }} />
+      <div className="h-2 overflow-hidden rounded-full bg-foreground/[0.08] dark:bg-white/[0.08]">
+        <div
+          className={`h-full rounded-full ${pct >= 80 ? 'bg-progress-gradient-green' : 'bg-progress-gradient'}`}
+          style={{ width: `${Math.min(pct, 100)}%` }}
+        />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground">
-        <div>
-          <p className="text-foreground">
-            {weiToAmount(goal.currentAmount, symbol)} / {weiToAmount(goal.targetAmount, symbol)}{' '}
-            {symbol}
-          </p>
-          <p>saved</p>
-        </div>
-        <div>
-          <p className="text-foreground">
-            {weiToAmount(goal.monthlyContribution, symbol)} {symbol}
-          </p>
-          <p>monthly</p>
-        </div>
+      <div className="font-mono text-[11px] font-semibold text-foreground/70">
+        {goal.achieved ? 'Achieved ✨' : `${pct.toFixed(0)}% complete`} ·{' '}
+        {weiToAmount(goal.monthlyContribution, symbol)} {symbol}/mo
       </div>
 
       {!goal.emergencyWithdrawn && (
@@ -119,7 +114,7 @@ function GoalCard({ goalId, chainId }: { goalId: Hex; chainId: number }) {
             <button
               disabled={busy}
               onClick={() => void contributeMonthly()}
-              className="inline-flex items-center gap-1 rounded-md border border-border/80 px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-2xl bg-foreground/[0.06] px-3.5 py-2 text-xs font-semibold text-foreground transition hover:bg-foreground/[0.12] disabled:opacity-50 dark:bg-white/[0.06] dark:hover:bg-white/[0.12]"
             >
               <PiggyBank className="h-3.5 w-3.5" /> Contribute monthly
             </button>
@@ -128,7 +123,7 @@ function GoalCard({ goalId, chainId }: { goalId: Hex; chainId: number }) {
             <button
               disabled={busy}
               onClick={() => void run(withdraw)}
-              className="inline-flex items-center gap-1 rounded-md border border-celo/50 px-3 py-2 text-xs font-medium text-celo transition-colors hover:bg-celo/10 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-2xl border border-celo-green/50 px-3.5 py-2 text-xs font-semibold text-celo-green-dark transition hover:bg-celo-green/10 disabled:opacity-50 dark:text-celo-green-light"
             >
               Withdraw
             </button>
@@ -136,7 +131,7 @@ function GoalCard({ goalId, chainId }: { goalId: Hex; chainId: number }) {
           <button
             disabled={busy}
             onClick={() => void run(emergency)}
-            className="inline-flex items-center gap-1 rounded-md border border-destructive/50 px-3 py-2 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-2xl border border-destructive/50 px-3.5 py-2 text-xs font-semibold text-destructive transition hover:bg-destructive/10 disabled:opacity-50"
           >
             Emergency withdraw (2% fee)
           </button>
@@ -166,7 +161,7 @@ function GoalsView() {
   }
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="mx-auto flex max-w-3xl items-center gap-2 text-sm text-foreground/60">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading your goals…
       </div>
     )
@@ -184,8 +179,10 @@ function GoalsView() {
     )
   }
   return (
-    <div className="mx-auto grid w-full max-w-3xl gap-4">
-      <h1 className="text-2xl font-semibold text-foreground">Your savings goals</h1>
+    <div className="mx-auto grid w-full max-w-3xl gap-3">
+      <h1 className="mb-1 text-2xl font-extrabold tracking-tight text-foreground">
+        Your savings goals
+      </h1>
       {goalIds.map((id) => (
         <GoalCard key={id} goalId={id} chainId={chainId} />
       ))}
