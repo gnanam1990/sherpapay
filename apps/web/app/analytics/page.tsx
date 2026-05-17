@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAccount, useChainId } from 'wagmi'
 import { celo, celoAlfajores } from 'wagmi/chains'
 import { BarChart3, TrendingUp, Calendar, Target, Users } from 'lucide-react'
@@ -140,6 +140,29 @@ function AnalyticsView() {
 
   const [sched, setSched] = useState<Record<string, ScheduleLike>>({})
   const [goals, setGoals] = useState<Record<string, GoalSnapshot>>({})
+  const loadsRef = useRef(0)
+
+  // Switching wallets must not show the previous wallet's probed data.
+  useEffect(() => {
+    setSched({})
+    setGoals({})
+    loadsRef.current = 0
+  }, [address])
+
+  // useHistory pages 20 tx at a time. Pull older pages until the last
+  // 30 days are actually covered (or we hit a sane cap / run out), so
+  // "last 30 days" isn't a lie about the most-recent 20 tx.
+  const PAGE_CAP = 8
+  const cutoff = Date.now() - 30 * 86_400_000
+  const oldestTs = history.items.at(-1)?.timestamp
+  const covered30d = oldestTs !== undefined && oldestTs <= cutoff
+  useEffect(() => {
+    if (history.loading || history.fetching) return
+    if (!history.canLoadMore || covered30d) return
+    if (loadsRef.current >= PAGE_CAP) return
+    loadsRef.current += 1
+    history.loadMore()
+  }, [history.loading, history.fetching, history.canLoadMore, covered30d, history])
 
   const onSched = useCallback((id: string, s: ScheduleLike) => {
     setSched((m) => (m[id] === s ? m : { ...m, [id]: s }))
@@ -187,7 +210,16 @@ function AnalyticsView() {
         <GoalProbe key={id} id={id} chainId={chainId} onLoad={onGoal} />
       ))}
 
-      <h1 className="mb-1 text-2xl font-extrabold tracking-tight text-foreground">Analytics</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Analytics</h1>
+      {history.items.length > 0 && (
+        <p className="mb-1 text-xs text-foreground/55">
+          Based on your {history.items.length} most recent transaction
+          {history.items.length === 1 ? '' : 's'}
+          {covered30d || !history.canLoadMore
+            ? '.'
+            : ' (loading older activity to cover 30 days…).'}
+        </p>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Card icon={TrendingUp} title="Sent · last 30 days">
