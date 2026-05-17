@@ -33,8 +33,11 @@ export function VoiceInput({ onTranscript, locale, disabled }: VoiceInputProps) 
     }
   }, [])
 
-  // Unsupported (incl. MiniPay's webview): hide entirely, no error spam.
-  if (supported === false) return null
+  // Render nothing until detection confirms support. `null` (pre-effect,
+  // matches SSR → no hydration mismatch) and `false` (unsupported, incl.
+  // MiniPay's webview) both hide the button entirely — no flash, no error
+  // spam. Supported browsers reveal it one invisible frame later.
+  if (!supported) return null
 
   function start() {
     const Ctor = getSpeechRecognition(typeof window === 'undefined' ? undefined : window)
