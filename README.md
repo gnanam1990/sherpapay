@@ -53,13 +53,21 @@ cannot be exercised in a normal desktop browser).
 
 ## Features
 
+### ✓ Live
+
 - **Natural Language Input** — Type what you want in plain English
+- **Direct Sends** — cUSD, cEUR, USDT transfers on Celo
+- **Safety Rings** — Multi-layer safety checks before any transaction
+- **MiniPay Native** — Auto-detect + auto-connect inside the MiniPay app
+
+### ⏳ Coming soon (Phase 2)
+
 - **Scheduled Payments** — Daily, weekly, monthly recurring transfers
-- **Recipient Aliases** — "mom" maps to a wallet address
-- **Safety Rings** — 7-layer safety checks before any transaction
 - **Savings Goals** — Goal-based savings with auto-DCA
-- **Multi-Token** — cUSD, cEUR, USDT on Celo
-- **MiniPay Native** — First-class MiniPay integration
+
+### ⏳ Coming soon (Phase 4)
+
+- **Recipient Aliases** — "mom" maps to a wallet address
 - **Local Currency** — Display amounts in NGN, KES, GHS, MXN, PHP, INR
 
 ## Tech Stack
