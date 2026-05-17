@@ -21,6 +21,8 @@ export type Intent =
       readonly recipient: string
       readonly amount: string
       readonly token: TokenSymbol
+      /** Set only when the recipient was typed as an international phone number. */
+      readonly recipientType?: 'phone'
     }
   | {
       readonly kind: 'schedule'
@@ -30,6 +32,8 @@ export type Intent =
       readonly frequency: Frequency
       readonly startDate?: Date
       readonly endDate?: Date
+      /** Set only when the recipient was typed as an international phone number. */
+      readonly recipientType?: 'phone'
     }
   | {
       readonly kind: 'save'

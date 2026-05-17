@@ -43,6 +43,28 @@ function parseRecipient(str: string): string | undefined {
   return match?.[1]?.toLowerCase()
 }
 
+/**
+ * Canonical form of a phone number: digits only, with a leading `+`
+ * preserved if present. Shared by the parser and the local phone→address
+ * store so detection and lookup key on the exact same string.
+ */
+export function normalizePhone(raw: string): string {
+  const trimmed = raw.trim()
+  const digits = trimmed.replace(/\D/g, '')
+  return trimmed.startsWith('+') ? `+${digits}` : digits
+}
+
+// Only +<country code><number> in E.164 range is treated as a phone.
+// Local digit strings without a leading + stay normal recipients.
+const PHONE_RECIPIENT_PATTERN = /to\s+(\+\d[\d\s().-]*\d)/i
+
+function parsePhoneRecipient(str: string): string | undefined {
+  const match = str.match(PHONE_RECIPIENT_PATTERN)
+  if (!match?.[1]) return undefined
+  const normalized = normalizePhone(match[1])
+  return /^\+\d{8,15}$/.test(normalized) ? normalized : undefined
+}
+
 function parseFrequency(str: string): Frequency | undefined {
   const lower = str.toLowerCase()
 
@@ -133,8 +155,10 @@ export function parse(input: string): Intent {
   if (lower.startsWith('send') || lower.startsWith('pay') || lower.startsWith('transfer')) {
     const amount = parseAmount(trimmed)
     const token = parseToken(trimmed)
-    const recipient = parseRecipient(trimmed)
+    const phone = parsePhoneRecipient(trimmed)
+    const recipient = phone ?? parseRecipient(trimmed)
     const frequency = parseFrequency(trimmed)
+    const phoneTag = phone ? { recipientType: 'phone' as const } : {}
 
     if (frequency) {
       return {
@@ -143,6 +167,7 @@ export function parse(input: string): Intent {
         amount: amount ?? '0',
         token: token ?? 'cUSD',
         frequency,
+        ...phoneTag,
       }
     }
 
@@ -151,6 +176,7 @@ export function parse(input: string): Intent {
       recipient: recipient ?? 'unknown',
       amount: amount ?? '0',
       token: token ?? 'cUSD',
+      ...phoneTag,
     }
   }
 
