@@ -1,7 +1,12 @@
 import type { Intent, TokenSymbol, Frequency } from '@sherpapay/core'
 
-const TOKEN_PATTERN = /\b(cUSD|cEUR|USDT)\b/i
-const AMOUNT_PATTERN = /(\d+(?:\.\d+)?)\s*(cUSD|cEUR|USDT)/i
+// Native Celo symbols + the words people actually say / dictate.
+// cUSD/cEUR first so they win over the bare USD/EUR aliases.
+const CURRENCY = 'cUSD|cEUR|USDT|USD|EUR|dollars?|euros?|tethers?'
+const TOKEN_PATTERN = new RegExp(`\\b(${CURRENCY})\\b`, 'i')
+// The amount still requires an adjacent currency word (so "target 100"
+// in a save command is never mistaken for the contribution amount).
+const AMOUNT_PATTERN = new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(?:${CURRENCY})\\b`, 'i')
 const RECIPIENT_PATTERN = /to\s+(\w+)/i
 
 const DAY_MAP: Record<string, number> = {
@@ -27,9 +32,13 @@ function parseToken(str: string): TokenSymbol | undefined {
   const match = str.match(TOKEN_PATTERN)
   if (!match?.[1]) return undefined
   const token = match[1].toUpperCase()
-  if (token === 'CUSD') return 'cUSD'
-  if (token === 'CEUR') return 'cEUR'
-  if (token === 'USDT') return 'USDT'
+  if (token === 'CUSD' || token === 'USD' || token === 'DOLLAR' || token === 'DOLLARS') {
+    return 'cUSD'
+  }
+  if (token === 'CEUR' || token === 'EUR' || token === 'EURO' || token === 'EUROS') {
+    return 'cEUR'
+  }
+  if (token === 'USDT' || token === 'TETHER' || token === 'TETHERS') return 'USDT'
   return undefined
 }
 
