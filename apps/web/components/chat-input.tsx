@@ -2,6 +2,8 @@
 
 import { useState, useCallback } from 'react'
 import { Send, Terminal } from 'lucide-react'
+import { VoiceInput } from '@/components/voice-input'
+import { useLocale } from '@/components/i18n-provider'
 
 interface ChatInputProps {
   onSubmit: (input: string) => void
@@ -10,6 +12,7 @@ interface ChatInputProps {
 
 export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
   const [input, setInput] = useState('')
+  const { locale } = useLocale()
 
   const handleSubmit = useCallback(
     (e: React.SyntheticEvent<HTMLFormElement>) => {
@@ -38,6 +41,7 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
         className="min-w-0 flex-1 bg-transparent py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none sm:text-base"
         disabled={isLoading}
       />
+      <VoiceInput locale={locale} onTranscript={setInput} disabled={isLoading} />
       <button
         type="submit"
         disabled={!input.trim() || isLoading}
