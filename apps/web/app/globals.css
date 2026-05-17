@@ -82,6 +82,13 @@ body {
   background: #fd1d75;
 }
 
+/* a11y: visible accent focus ring on keyboard navigation only. */
+:focus-visible {
+  outline: 2px solid #fd1d75;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 @layer components {
   .glass-card {
     @apply backdrop-blur-card border;
@@ -135,5 +142,31 @@ body {
 
   .meta-label {
     @apply font-mono text-xs uppercase tracking-widest;
+  }
+
+  /* Subtle entrance stagger for list children (each child should
+     carry animate-fade-in). Capped — no long cascades. */
+  .stagger > *:nth-child(2) {
+    animation-delay: 60ms;
+  }
+  .stagger > *:nth-child(3) {
+    animation-delay: 120ms;
+  }
+  .stagger > *:nth-child(4) {
+    animation-delay: 180ms;
+  }
+  .stagger > *:nth-child(n + 5) {
+    animation-delay: 240ms;
+  }
+
+  .error-card {
+    background: rgba(253, 29, 117, 0.12);
+    border: 1px solid rgba(253, 29, 117, 0.35);
+    color: #fd1d75;
+  }
+  .dark .error-card {
+    background: rgba(253, 29, 117, 0.15);
+    border-color: rgba(253, 29, 117, 0.4);
+    color: #ff5c97;
   }
 }
