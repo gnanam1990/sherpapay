@@ -1,0 +1,19 @@
+{
+  "nav.home": "Inicio",
+  "nav.schedules": "Programados",
+  "nav.goals": "Metas",
+  "nav.history": "Historial",
+  "nav.settings": "Ajustes",
+  "lang.label": "Idioma",
+  "hero.title": "Envía estables de Celo en lenguaje natural.",
+  "hero.subtitle": "Un comando se convierte en una transferencia verificada de cUSD, cEUR o USDT.",
+  "command.label": "Comando",
+  "command.sublabel": "Transferencia de estable de Celo",
+  "confirm.transfer": "Confirmar transferencia",
+  "confirm.schedule": "Confirmar programación",
+  "confirm.cancel": "Cancelar",
+  "error.connect": "Conecta MiniPay u otra billetera de Celo antes de enviar.",
+  "error.connectSchedule": "Conecta MiniPay u otra billetera de Celo antes de programar.",
+  "error.amountZero": "El monto debe ser mayor que cero.",
+  "error.onceNotSchedule": "Ese comando es único. Usa un \"send\" simple para una sola transferencia."
+}

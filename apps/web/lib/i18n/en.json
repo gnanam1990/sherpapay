@@ -1,0 +1,19 @@
+{
+  "nav.home": "Home",
+  "nav.schedules": "Schedules",
+  "nav.goals": "Goals",
+  "nav.history": "History",
+  "nav.settings": "Settings",
+  "lang.label": "Language",
+  "hero.title": "Send Celo stables from plain English.",
+  "hero.subtitle": "One command becomes a safety-checked wallet transfer for cUSD, cEUR, or USDT.",
+  "command.label": "Command",
+  "command.sublabel": "Celo stablecoin transfer",
+  "confirm.transfer": "Confirm transfer",
+  "confirm.schedule": "Confirm schedule",
+  "confirm.cancel": "Cancel",
+  "error.connect": "Connect MiniPay or another Celo wallet before sending.",
+  "error.connectSchedule": "Connect MiniPay or another Celo wallet before scheduling.",
+  "error.amountZero": "Amount must be greater than zero.",
+  "error.onceNotSchedule": "That command is one-off. Use a plain \"send\" for a single transfer."
+}

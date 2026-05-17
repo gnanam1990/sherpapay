@@ -48,6 +48,7 @@ import {
   type SafetyContext,
   type SafetyResult,
 } from '@sherpapay/core'
+import { useIntl } from 'react-intl'
 import { parse } from '@sherpapay/parser'
 import { runSafetyChecks } from '@sherpapay/safety'
 import { ChatInput } from '@/components/chat-input'
@@ -144,6 +145,7 @@ function describeUnsupportedIntent(intent: Intent): string | null {
 }
 
 export function HomeFlow() {
+  const intl = useIntl()
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
   const { isMiniPay } = useMiniPay()
@@ -284,7 +286,7 @@ export function HomeFlow() {
     if (intent.kind !== 'send') return
 
     if (!isConnected || !address) {
-      setError('Connect MiniPay or another Celo wallet before sending.')
+      setError(intl.formatMessage({ id: 'error.connect' }))
       return
     }
 
@@ -300,7 +302,7 @@ export function HomeFlow() {
     const tokenAddress = TOKENS[targetChainId][intent.token]
     const amountWei = amountToWei(intent.amount, intent.token)
     if (amountWei <= ZERO_AMOUNT) {
-      setError('Amount must be greater than zero.')
+      setError(intl.formatMessage({ id: 'error.amountZero' }))
       return
     }
     if (tokenBalance === undefined) {
@@ -331,7 +333,7 @@ export function HomeFlow() {
   // in a later iteration by threading it through these helpers.
   async function confirmSchedule(intent: Extract<Intent, { kind: 'schedule' }>) {
     if (!isConnected || !address) {
-      setError('Connect MiniPay or another Celo wallet before scheduling.')
+      setError(intl.formatMessage({ id: 'error.connectSchedule' }))
       return
     }
     if (!isValidAddress(intent.recipient)) {
@@ -340,7 +342,7 @@ export function HomeFlow() {
     }
     const interval = intervalSeconds(intent.frequency)
     if (interval === null) {
-      setError('That command is one-off. Use a plain "send" for a single transfer.')
+      setError(intl.formatMessage({ id: 'error.onceNotSchedule' }))
       return
     }
     if (!publicClient) {
@@ -354,7 +356,7 @@ export function HomeFlow() {
     const tokenAddress = TOKENS[targetChainId][intent.token] as Address
     const amountWei = amountToWei(intent.amount, intent.token)
     if (amountWei <= ZERO_AMOUNT) {
-      setError('Amount must be greater than zero.')
+      setError(intl.formatMessage({ id: 'error.amountZero' }))
       return
     }
 
@@ -480,18 +482,22 @@ export function HomeFlow() {
 
         <div className="space-y-3">
           <h1 className="max-w-3xl text-4xl font-semibold leading-[1.05] text-foreground sm:text-5xl">
-            Send Celo stables from plain English.
+            {intl.formatMessage({ id: 'hero.title' })}
           </h1>
           <p className="max-w-2xl text-base leading-7 text-muted-foreground">
-            One command becomes a safety-checked wallet transfer for cUSD, cEUR, or USDT.
+            {intl.formatMessage({ id: 'hero.subtitle' })}
           </p>
         </div>
 
         <section className="rounded-lg border border-border/70 bg-card/90 p-4 shadow-soft-panel sm:p-5">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-medium uppercase text-muted-foreground">Command</p>
-              <p className="mt-1 text-sm text-foreground">Celo stablecoin transfer</p>
+              <p className="text-xs font-medium uppercase text-muted-foreground">
+                {intl.formatMessage({ id: 'command.label' })}
+              </p>
+              <p className="mt-1 text-sm text-foreground">
+                {intl.formatMessage({ id: 'command.sublabel' })}
+              </p>
             </div>
             <div className="inline-flex w-fit items-center gap-2 rounded-md border border-border/70 bg-background/60 px-3 py-2 text-xs text-muted-foreground">
               <Network className="h-3.5 w-3.5 text-celo" />

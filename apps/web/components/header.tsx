@@ -5,19 +5,22 @@ import Link from 'next/link'
 import { Calendar, Clock, Home, Menu, Settings, Target, X } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
+import { useIntl } from 'react-intl'
 import { cn } from '@/lib/utils'
+import { LanguageSwitcher } from '@/components/language-switcher'
 
 const navItems = [
-  { href: '/', label: 'Home', icon: Home },
-  { href: '/schedules', label: 'Schedules', icon: Calendar },
-  { href: '/goals', label: 'Goals', icon: Target },
-  { href: '/history', label: 'History', icon: Clock },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/', id: 'nav.home', icon: Home },
+  { href: '/schedules', id: 'nav.schedules', icon: Calendar },
+  { href: '/goals', id: 'nav.goals', icon: Target },
+  { href: '/history', id: 'nav.history', icon: Clock },
+  { href: '/settings', id: 'nav.settings', icon: Settings },
 ]
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const pathname = usePathname()
+  const intl = useIntl()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background/80 backdrop-blur-xl">
@@ -51,13 +54,14 @@ export function Header() {
                 )}
               >
                 <item.icon className="h-4 w-4" />
-                {item.label}
+                {intl.formatMessage({ id: item.id })}
               </Link>
             )
           })}
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
+          <LanguageSwitcher />
           <ConnectButton />
           <button
             type="button"
@@ -91,7 +95,7 @@ export function Header() {
                 }}
               >
                 <item.icon className="h-4 w-4" />
-                {item.label}
+                {intl.formatMessage({ id: item.id })}
               </Link>
             )
           })}

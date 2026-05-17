@@ -9,6 +9,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react'
+import { useIntl } from 'react-intl'
 import type { SafetyResult, Intent } from '@sherpapay/core'
 import { cn } from '@/lib/utils'
 
@@ -33,6 +34,7 @@ export function ConfirmationCard({
   onConfirm,
   onCancel,
 }: ConfirmationCardProps) {
+  const intl = useIntl()
   const checkStyles = {
     safe: {
       icon: <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-celo" />,
@@ -192,7 +194,9 @@ export function ConfirmationCard({
               onClick={onConfirm}
               className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              {intent.kind === 'schedule' ? 'Confirm schedule' : 'Confirm transfer'}
+              {intl.formatMessage({
+                id: intent.kind === 'schedule' ? 'confirm.schedule' : 'confirm.transfer',
+              })}
               <ArrowRight className="h-4 w-4" />
             </button>
             <button
@@ -200,7 +204,7 @@ export function ConfirmationCard({
               className="inline-flex items-center justify-center gap-2 rounded-md border border-border/80 px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <X className="h-4 w-4" />
-              Cancel
+              {intl.formatMessage({ id: 'confirm.cancel' })}
             </button>
           </div>
         )}

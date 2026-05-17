@@ -1,0 +1,19 @@
+{
+  "nav.home": "Nyumbani",
+  "nav.schedules": "Ratiba",
+  "nav.goals": "Malengo",
+  "nav.history": "Historia",
+  "nav.settings": "Mipangilio",
+  "lang.label": "Lugha",
+  "hero.title": "Tuma sarafu imara za Celo kwa lugha ya kawaida.",
+  "hero.subtitle": "Amri moja inakuwa uhamisho uliokaguliwa wa cUSD, cEUR au USDT.",
+  "command.label": "Amri",
+  "command.sublabel": "Uhamisho wa sarafu imara ya Celo",
+  "confirm.transfer": "Thibitisha uhamisho",
+  "confirm.schedule": "Thibitisha ratiba",
+  "confirm.cancel": "Ghairi",
+  "error.connect": "Unganisha MiniPay au pochi nyingine ya Celo kabla ya kutuma.",
+  "error.connectSchedule": "Unganisha MiniPay au pochi nyingine ya Celo kabla ya kupanga ratiba.",
+  "error.amountZero": "Kiasi lazima kiwe kikubwa kuliko sifuri.",
+  "error.onceNotSchedule": "Amri hiyo ni ya mara moja. Tumia \"send\" ya kawaida kwa uhamisho mmoja."
+}

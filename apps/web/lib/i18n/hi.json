@@ -1,0 +1,19 @@
+{
+  "nav.home": "होम",
+  "nav.schedules": "शेड्यूल",
+  "nav.goals": "लक्ष्य",
+  "nav.history": "इतिहास",
+  "nav.settings": "सेटिंग्स",
+  "lang.label": "भाषा",
+  "hero.title": "सादी भाषा में Celo स्थिर सिक्के भेजें।",
+  "hero.subtitle": "एक कमांड cUSD, cEUR या USDT का सुरक्षा-जाँचा गया वॉलेट ट्रांसफर बन जाता है।",
+  "command.label": "कमांड",
+  "command.sublabel": "Celo स्थिर सिक्का ट्रांसफर",
+  "confirm.transfer": "ट्रांसफर की पुष्टि करें",
+  "confirm.schedule": "शेड्यूल की पुष्टि करें",
+  "confirm.cancel": "रद्द करें",
+  "error.connect": "भेजने से पहले MiniPay या कोई अन्य Celo वॉलेट कनेक्ट करें।",
+  "error.connectSchedule": "शेड्यूल करने से पहले MiniPay या कोई अन्य Celo वॉलेट कनेक्ट करें।",
+  "error.amountZero": "राशि शून्य से अधिक होनी चाहिए।",
+  "error.onceNotSchedule": "वह कमांड एक-बार का है। एकल ट्रांसफर के लिए सादा \"send\" उपयोग करें।"
+}
