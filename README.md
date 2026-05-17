@@ -105,18 +105,20 @@ Honest status — what is shipped vs not.
 
 ## Screenshots
 
-> Captured separately and committed under `docs/screenshots/`
+> The UI uses the **Soft Glass** design system (mandatory light + dark).
+> Shots are captured separately and committed under `docs/screenshots/`
 > (see [`docs/screenshots/README.md`](docs/screenshots/README.md) for the
-> exact shot list). Not embedded here until the real images are added —
-> no placeholder graphics.
+> exact list). Not embedded here until the real images are added — no
+> placeholder or fabricated graphics.
 
-| Screen      | File                             |
-| ----------- | -------------------------------- |
-| Home / send | `docs/screenshots/home.png`      |
-| Schedules   | `docs/screenshots/schedules.png` |
-| Goals       | `docs/screenshots/goals.png`     |
-| History     | `docs/screenshots/history.png`   |
-| Settings    | `docs/screenshots/settings.png`  |
+| Screen    | Light                                  | Dark                                  |
+| --------- | -------------------------------------- | ------------------------------------- |
+| Home      | `docs/screenshots/home-light.png`      | `docs/screenshots/home-dark.png`      |
+| Confirm   | `docs/screenshots/confirm-light.png`   | `docs/screenshots/confirm-dark.png`   |
+| Schedules | `docs/screenshots/schedules-light.png` | `docs/screenshots/schedules-dark.png` |
+| Goals     | `docs/screenshots/goals-light.png`     | `docs/screenshots/goals-dark.png`     |
+| History   | `docs/screenshots/history-light.png`   | `docs/screenshots/history-dark.png`   |
+| Settings  | `docs/screenshots/settings-light.png`  | `docs/screenshots/settings-dark.png`  |
 
 ## Tech Stack
 
