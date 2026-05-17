@@ -12,14 +12,27 @@ import {
 import type { SafetyResult, Intent } from '@sherpapay/core'
 import { cn } from '@/lib/utils'
 
+export interface ScheduleSummary {
+  cycles: number
+  totalLocked: string
+  endsAt: string
+}
+
 interface ConfirmationCardProps {
   intent: Intent
   safety: SafetyResult
+  scheduleSummary?: ScheduleSummary | undefined
   onConfirm: () => void
   onCancel: () => void
 }
 
-export function ConfirmationCard({ intent, safety, onConfirm, onCancel }: ConfirmationCardProps) {
+export function ConfirmationCard({
+  intent,
+  safety,
+  scheduleSummary,
+  onConfirm,
+  onCancel,
+}: ConfirmationCardProps) {
   const checkStyles = {
     safe: {
       icon: <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-celo" />,
@@ -114,6 +127,25 @@ export function ConfirmationCard({ intent, safety, onConfirm, onCancel }: Confir
           </div>
         )}
 
+        {intent.kind === 'schedule' && scheduleSummary && (
+          <div className="space-y-1 rounded-md border border-accent/40 bg-accent/10 p-3 text-xs text-foreground">
+            <p>
+              You&apos;re committing to send {intent.amount} {intent.token} for{' '}
+              <strong>{scheduleSummary.cycles} cycles</strong>.
+            </p>
+            <p>
+              Total locked now: <strong>{scheduleSummary.totalLocked}</strong> ({intent.amount}{' '}
+              {intent.token} × {scheduleSummary.cycles}).
+            </p>
+            <p>
+              Schedule ends: <strong>{scheduleSummary.endsAt}</strong>.
+            </p>
+            <p className="text-muted-foreground">
+              You can cancel anytime and reclaim the unspent escrow.
+            </p>
+          </div>
+        )}
+
         {intent.kind === 'save' && (
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-md border border-border/70 bg-background/50 p-3">
@@ -160,7 +192,7 @@ export function ConfirmationCard({ intent, safety, onConfirm, onCancel }: Confir
               onClick={onConfirm}
               className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              Confirm transfer
+              {intent.kind === 'schedule' ? 'Confirm schedule' : 'Confirm transfer'}
               <ArrowRight className="h-4 w-4" />
             </button>
             <button
