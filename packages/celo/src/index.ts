@@ -118,3 +118,7 @@ export function getTokenAddress(chainId: number, token: TokenSymbol): string {
 export function getAllTokenAddresses(chainId: number) {
   return chainId === CELO_MAINNET_CHAIN_ID ? mainnetTokens : testnetTokens
 }
+
+// ─── SherpaPay Contract ABIs ─────────────────────────────────────────
+
+export * from './scheduler-abi.js'
