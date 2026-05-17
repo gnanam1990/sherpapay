@@ -13,6 +13,7 @@ const NAV = [
   { href: '/', id: 'nav.home' },
   { href: '/schedules', id: 'nav.schedules' },
   { href: '/goals', id: 'nav.goals' },
+  { href: '/analytics', id: 'nav.analytics' },
   { href: '/history', id: 'nav.history' },
   { href: '/settings', id: 'nav.settings' },
 ]

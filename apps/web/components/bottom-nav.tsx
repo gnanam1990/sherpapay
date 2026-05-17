@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Home, Calendar, Target, Clock, Settings } from 'lucide-react'
+import { Home, Calendar, Target, BarChart3, Clock, Settings } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useIntl } from 'react-intl'
 import { cn } from '@/lib/utils'
@@ -10,6 +10,7 @@ const NAV = [
   { href: '/', icon: Home, id: 'nav.home' },
   { href: '/schedules', icon: Calendar, id: 'nav.schedules' },
   { href: '/goals', icon: Target, id: 'nav.goals' },
+  { href: '/analytics', icon: BarChart3, id: 'nav.analytics' },
   { href: '/history', icon: Clock, id: 'nav.history' },
   { href: '/settings', icon: Settings, id: 'nav.settings' },
 ]
