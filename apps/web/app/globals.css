@@ -1,24 +1,53 @@
+/* Google Fonts must precede @tailwind for valid CSS @import ordering. */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: 220 24% 7%;
-  --background-soft: 222 22% 10%;
-  --foreground: 210 35% 96%;
-  --card: 222 20% 10%;
-  --card-foreground: 210 35% 96%;
-  --muted: 220 15% 15%;
-  --muted-foreground: 216 13% 67%;
-  --accent: 44 92% 55%;
-  --accent-foreground: 221 34% 8%;
-  --destructive: 0 74% 58%;
+  /* Soft-glass — light */
+  --background: 30 67% 96%; /* #FEF7F0 cream */
+  --foreground: 270 39% 18%; /* #2D1B3F deep plum */
+  --card: 0 0% 100%;
+  --card-foreground: 270 39% 18%;
+  --muted: 270 14% 92%;
+  --muted-foreground: 270 14% 45%;
+  --border: 270 14% 88%;
+  --primary: 270 39% 18%;
+  --primary-foreground: 30 67% 96%;
+
+  /* Compatibility layer — preserves existing component styling,
+     aligned to the new orange/pink gradient palette. */
+  --accent: 24 95% 64%; /* warm orange, gradient start */
+  --accent-foreground: 0 0% 100%;
+  --destructive: 340 96% 55%; /* gradient pink, errors */
   --destructive-foreground: 0 0% 100%;
-  --border: 218 18% 20%;
-  --input: 218 18% 18%;
-  --ring: 221 100% 61%;
-  --primary: 221 100% 56%;
-  --primary-foreground: 0 0% 100%;
+  --input: 270 14% 88%;
+  --ring: 340 96% 55%;
+  --celo: 148 62% 51%; /* #35D07F Celo green */
+  --celo-foreground: 151 48% 8%;
+}
+
+.dark {
+  /* Soft-glass — dark */
+  --background: 285 50% 7%; /* #14081A deep night */
+  --foreground: 25 45% 92%; /* #F5E8E0 cream */
+  --card: 285 30% 12%;
+  --card-foreground: 25 45% 92%;
+  --muted: 285 20% 18%;
+  --muted-foreground: 25 20% 65%;
+  --border: 285 20% 22%;
+  --primary: 25 45% 92%;
+  --primary-foreground: 285 50% 7%;
+
+  /* Compatibility layer — dark */
+  --accent: 24 95% 60%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 340 88% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 285 20% 25%;
+  --ring: 340 96% 55%;
   --celo: 148 62% 51%;
   --celo-foreground: 151 48% 8%;
 }
@@ -32,12 +61,79 @@ body {
   overflow-x: hidden;
   color: hsl(var(--foreground));
   background:
-    linear-gradient(135deg, rgba(0, 82, 255, 0.16) 0%, transparent 28%),
-    linear-gradient(215deg, rgba(53, 208, 127, 0.1) 0%, transparent 34%),
-    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background-soft)) 100%);
+    radial-gradient(circle at 15% 25%, #ffd2a8 0%, transparent 55%),
+    radial-gradient(circle at 85% 75%, #ffc1d0 0%, transparent 55%),
+    radial-gradient(circle at 50% 50%, #d9e9ff 0%, transparent 65%),
+    hsl(var(--background));
+  background-attachment: fixed;
+}
+
+.dark body {
+  background:
+    radial-gradient(circle at 15% 25%, rgba(252, 176, 69, 0.18) 0%, transparent 55%),
+    radial-gradient(circle at 85% 75%, rgba(253, 29, 117, 0.15) 0%, transparent 55%),
+    radial-gradient(circle at 50% 50%, rgba(53, 208, 127, 0.08) 0%, transparent 65%),
+    hsl(var(--background));
+  background-attachment: fixed;
 }
 
 ::selection {
-  color: hsl(var(--primary-foreground));
-  background: hsl(var(--primary));
+  color: white;
+  background: #fd1d75;
+}
+
+@layer components {
+  .glass-card {
+    @apply backdrop-blur-card border;
+    background: rgba(255, 255, 255, 0.6);
+    border-color: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 16px 40px rgba(45, 27, 63, 0.08);
+  }
+  .dark .glass-card {
+    background: rgba(40, 20, 40, 0.55);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .glass-nav {
+    @apply backdrop-blur-nav border;
+    background: rgba(255, 255, 255, 0.5);
+    border-color: rgba(255, 255, 255, 0.7);
+  }
+  .dark .glass-nav {
+    background: rgba(40, 20, 40, 0.5);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-input {
+    @apply border;
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(255, 255, 255, 0.95);
+  }
+  .dark .glass-input {
+    background: rgba(20, 10, 20, 0.5);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .gradient-text {
+    background: linear-gradient(90deg, #fcb045 0%, #fd1d75 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .celo-tag {
+    background: rgba(53, 208, 127, 0.15);
+    color: #1a7c4c;
+    border: 1px solid rgba(53, 208, 127, 0.3);
+  }
+  .dark .celo-tag {
+    background: rgba(53, 208, 127, 0.12);
+    color: #51e07c;
+    border-color: rgba(53, 208, 127, 0.25);
+  }
+
+  .meta-label {
+    @apply font-mono text-xs uppercase tracking-widest;
+  }
 }
