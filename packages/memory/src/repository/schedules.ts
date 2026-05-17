@@ -3,6 +3,8 @@ import type { Pool } from 'pg'
 export interface Schedule {
   id: string
   onchain_id: string | null
+  onchain_tx_hash: string | null
+  onchain_status: string | null
   user_id: string
   recipient_address: string
   token: string
@@ -29,7 +31,9 @@ export function createScheduleRepository(pool: Pool) {
     },
 
     async findByOnchainId(onchainId: string): Promise<Schedule | null> {
-      const { rows } = await pool.query<Schedule>('SELECT * FROM schedules WHERE onchain_id = $1', [onchainId])
+      const { rows } = await pool.query<Schedule>('SELECT * FROM schedules WHERE onchain_id = $1', [
+        onchainId,
+      ])
       return rows[0]! ?? null
     },
 
@@ -60,7 +64,21 @@ export function createScheduleRepository(pool: Pool) {
       const { rows } = await pool.query<Schedule>(
         `INSERT INTO schedules (onchain_id, user_id, recipient_address, token, amount_wei, frequency_kind, frequency_value, start_time, end_time, max_failures, status, alias, next_execution)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-        [data.onchain_id, data.user_id, data.recipient_address, data.token, data.amount_wei, data.frequency_kind, data.frequency_value, data.start_time, data.end_time, data.max_failures, data.status, data.alias, data.next_execution],
+        [
+          data.onchain_id,
+          data.user_id,
+          data.recipient_address,
+          data.token,
+          data.amount_wei,
+          data.frequency_kind,
+          data.frequency_value,
+          data.start_time,
+          data.end_time,
+          data.max_failures,
+          data.status,
+          data.alias,
+          data.next_execution,
+        ],
       )
       return rows[0]!
     },
@@ -73,15 +91,30 @@ export function createScheduleRepository(pool: Pool) {
       return rows[0]! ?? null
     },
 
+    async setOnchain(
+      id: string,
+      onchainId: string,
+      txHash: string | null,
+    ): Promise<Schedule | null> {
+      const { rows } = await pool.query<Schedule>(
+        `UPDATE schedules
+         SET onchain_id = $2, onchain_tx_hash = $3, onchain_status = 'created',
+             status = 'active', updated_at = NOW()
+         WHERE id = $1 RETURNING *`,
+        [id, onchainId, txHash],
+      )
+      return rows[0]! ?? null
+    },
+
     async recordExecution(id: string, success: boolean, _errorMessage?: string): Promise<void> {
       if (success) {
         await pool.query(
-          "UPDATE schedules SET last_execution = NOW(), current_failures = 0, updated_at = NOW() WHERE id = $1",
+          'UPDATE schedules SET last_execution = NOW(), current_failures = 0, updated_at = NOW() WHERE id = $1',
           [id],
         )
       } else {
         await pool.query(
-          "UPDATE schedules SET current_failures = current_failures + 1, updated_at = NOW() WHERE id = $1",
+          'UPDATE schedules SET current_failures = current_failures + 1, updated_at = NOW() WHERE id = $1',
           [id],
         )
       }
