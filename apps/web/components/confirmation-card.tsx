@@ -107,17 +107,6 @@ export function ConfirmationCard({
         </p>
       )}
 
-      {intent.kind === 'save' && (
-        <p className="mb-4 text-lg font-bold leading-snug text-foreground">
-          Save{' '}
-          <span className="gradient-text">
-            {intent.amount} {intent.token}
-          </span>{' '}
-          toward <span className="gradient-text">{intent.goal.label}</span> every{' '}
-          {intent.frequency.kind}
-        </p>
-      )}
-
       {(intent.kind === 'send' || intent.kind === 'schedule') &&
         resolvedRecipient &&
         resolvedRecipient.toLowerCase() !== intent.recipient.toLowerCase() && (
@@ -158,13 +147,6 @@ export function ConfirmationCard({
                 />
               </>
             )}
-          </>
-        )}
-        {intent.kind === 'save' && (
-          <>
-            <DetailRow label="Amount" value={`${intent.amount} ${intent.token}`} />
-            <DetailRow label="Goal" value={intent.goal.label} />
-            <DetailRow label="Frequency" value={intent.frequency.kind} />
           </>
         )}
       </div>
