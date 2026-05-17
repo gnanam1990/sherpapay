@@ -5,13 +5,22 @@ const AMOUNT_PATTERN = /(\d+(?:\.\d+)?)\s*(cUSD|cEUR|USDT)/i
 const RECIPIENT_PATTERN = /to\s+(\w+)/i
 
 const DAY_MAP: Record<string, number> = {
-  sunday: 0, sun: 0,
-  monday: 1, mon: 1,
-  tuesday: 2, tue: 2, tues: 2,
-  wednesday: 3, wed: 3,
-  thursday: 4, thu: 4, thurs: 4,
-  friday: 5, fri: 5,
-  saturday: 6, sat: 6,
+  sunday: 0,
+  sun: 0,
+  monday: 1,
+  mon: 1,
+  tuesday: 2,
+  tue: 2,
+  tues: 2,
+  wednesday: 3,
+  wed: 3,
+  thursday: 4,
+  thu: 4,
+  thurs: 4,
+  friday: 5,
+  fri: 5,
+  saturday: 6,
+  sat: 6,
 }
 
 function parseToken(str: string): TokenSymbol | undefined {
@@ -38,8 +47,10 @@ function parseFrequency(str: string): Frequency | undefined {
   const lower = str.toLowerCase()
 
   if (lower.includes('every day') || lower.includes('daily')) return { kind: 'daily' }
-  if (lower.includes('every month') || lower.includes('monthly')) return { kind: 'monthly', dayOfMonth: 1 }
-  if (lower.includes('every week') || lower.includes('weekly')) return { kind: 'weekly', dayOfWeek: 1 }
+  if (lower.includes('every month') || lower.includes('monthly'))
+    return { kind: 'monthly', dayOfMonth: 1 }
+  if (lower.includes('every week') || lower.includes('weekly'))
+    return { kind: 'weekly', dayOfWeek: 1 }
   if (lower.includes('every hour')) return { kind: 'custom', intervalSeconds: 3600 }
 
   for (const [day, num] of Object.entries(DAY_MAP)) {
@@ -52,7 +63,9 @@ function parseFrequency(str: string): Frequency | undefined {
 }
 
 function parseGoalLabel(str: string): string {
-  const forMatch = str.match(/for\s+(.+?)(?:\s+every|\s*$)/i)
+  const forMatch = str.match(
+    /for\s+(.+?)(?:\s+(?:every|daily|weekly|monthly|target|goal|by)\b|\s*$)/i,
+  )
   return forMatch?.[1]?.trim() ?? 'savings'
 }
 
@@ -82,7 +95,12 @@ export function parse(input: string): Intent {
     return { kind: 'resume', scheduleAlias: alias || 'unknown' }
   }
 
-  if (lower.startsWith('how much') || lower.startsWith('what') || lower.startsWith('status') || lower.startsWith('show')) {
+  if (
+    lower.startsWith('how much') ||
+    lower.startsWith('what') ||
+    lower.startsWith('status') ||
+    lower.startsWith('show')
+  ) {
     return { kind: 'status', query: trimmed }
   }
 
@@ -93,11 +111,21 @@ export function parse(input: string): Intent {
     const goalLabel = parseGoalLabel(trimmed)
     const target = parseTargetAmount(trimmed)
 
+    const contribution = amount ? Number(amount) : NaN
+    const targetNum = target ? Number(target) : NaN
+    const durationCycles =
+      Number.isFinite(contribution) &&
+      contribution > 0 &&
+      Number.isFinite(targetNum) &&
+      targetNum > 0
+        ? Math.ceil(targetNum / contribution)
+        : undefined
+
     return {
       kind: 'save',
       amount: amount ?? '0',
       token: token ?? 'cUSD',
-      goal: { label: goalLabel, target },
+      goal: { label: goalLabel, target, durationCycles },
       frequency,
     }
   }

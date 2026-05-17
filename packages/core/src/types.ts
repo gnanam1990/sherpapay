@@ -39,6 +39,8 @@ export type Intent =
         readonly label: string
         readonly target?: string
         readonly targetDate?: Date
+        /** Cycles to reach target at this contribution: ceil(target / amount). */
+        readonly durationCycles?: number
       }
       readonly frequency: Frequency
     }
