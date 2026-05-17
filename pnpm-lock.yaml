@@ -275,6 +275,12 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.14
+      react:
+        specifier: ^19.0.0
+        version: 19.2.6
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
