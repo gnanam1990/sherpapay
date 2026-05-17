@@ -70,3 +70,22 @@ jobs:
 
       - name: Run contract tests
         run: cd contracts && forge test -vvv
+
+  slither:
+    name: Slither (informational)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Static analysis is advisory — findings are surfaced but do not
+    # block the pipeline.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Run Slither
+        continue-on-error: true
+        uses: crytic/slither-action@v0.4.0
+        with:
+          target: contracts
+          slither-args: --filter-paths "lib/"
