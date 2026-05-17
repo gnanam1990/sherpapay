@@ -4,6 +4,7 @@ import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
 import { BottomNav } from '@/components/bottom-nav'
 import { Globe2, Languages, UserRoundPlus } from 'lucide-react'
+import { AliasManager } from '@/components/alias-manager'
 
 export default function SettingsPage() {
   return (
@@ -27,15 +28,11 @@ export default function SettingsPage() {
                 <div className="min-w-0 flex-1">
                   <h2 className="font-semibold">Recipient aliases</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Friendly names will map to wallet addresses after the address book ships.
+                    Save friendly names per wallet, then say &ldquo;send 5 cUSD to mom&rdquo;.
                   </p>
-                  <button
-                    type="button"
-                    disabled
-                    className="mt-4 rounded-md border border-border/80 px-4 py-2 text-sm text-muted-foreground"
-                  >
-                    Coming soon
-                  </button>
+                  <div className="mt-4">
+                    <AliasManager />
+                  </div>
                 </div>
               </div>
             </section>

@@ -54,6 +54,7 @@ import { runSafetyChecks } from '@sherpapay/safety'
 import { ChatInput } from '@/components/chat-input'
 import { ConfirmationCard } from '@/components/confirmation-card'
 import { useLocalCurrency } from '@/lib/use-fx'
+import { useAliases } from '@/lib/use-aliases'
 import { TOKENS } from '@/lib/wagmi'
 
 type Address = `0x${string}`
@@ -148,6 +149,7 @@ function describeUnsupportedIntent(intent: Intent): string | null {
 export function HomeFlow() {
   const intl = useIntl()
   const fx = useLocalCurrency()
+  const aliases = useAliases()
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
   const { isMiniPay } = useMiniPay()
@@ -246,6 +248,14 @@ export function HomeFlow() {
     return safety
   }, [isBalanceFetching, isBalanceLoading, preview, shouldReadTokenBalance, tokenBalance])
 
+  // A 0x address passes through; otherwise try the connected wallet's
+  // saved aliases ("mom" → 0x…). null = unresolvable.
+  function resolveRecipient(raw: string): Address | null {
+    if (isValidAddress(raw)) return raw as Address
+    const resolved = aliases.resolve(raw)
+    return resolved && isValidAddress(resolved) ? (resolved as Address) : null
+  }
+
   function previewPrompt(input: string) {
     setError(null)
     setSubmittedHash(undefined)
@@ -292,8 +302,11 @@ export function HomeFlow() {
       return
     }
 
-    if (!isValidAddress(intent.recipient)) {
-      setError('Aliases are not connected yet. Use a full 0x recipient address for live transfers.')
+    const recipient = resolveRecipient(intent.recipient)
+    if (!recipient) {
+      setError(
+        `No saved alias "${intent.recipient}". Add it in Settings, or use a full 0x address.`,
+      )
       return
     }
 
@@ -322,7 +335,7 @@ export function HomeFlow() {
       address: tokenAddress,
       abi: erc20Abi,
       functionName: 'transfer',
-      args: [intent.recipient as Address, amountWei],
+      args: [recipient, amountWei],
       chainId: targetChainId,
     })
 
@@ -338,8 +351,11 @@ export function HomeFlow() {
       setError(intl.formatMessage({ id: 'error.connectSchedule' }))
       return
     }
-    if (!isValidAddress(intent.recipient)) {
-      setError('Aliases are not connected yet. Use a full 0x recipient address.')
+    const recipient = resolveRecipient(intent.recipient)
+    if (!recipient) {
+      setError(
+        `No saved alias "${intent.recipient}". Add it in Settings, or use a full 0x address.`,
+      )
       return
     }
     const interval = intervalSeconds(intent.frequency)
@@ -396,7 +412,7 @@ export function HomeFlow() {
 
       setScheduleStatus('Creating schedule on Celo…')
       const createHash = await createSchedule({
-        recipient: intent.recipient as Address,
+        recipient,
         token: tokenAddress,
         amount: amountWei,
         startTime,
@@ -460,6 +476,15 @@ export function HomeFlow() {
             ).toLocaleDateString(),
           }
         })()
+      : undefined
+
+  const previewRecipient =
+    preview?.intent.kind === 'send' || preview?.intent.kind === 'schedule'
+      ? preview.intent.recipient
+      : null
+  const previewResolvedRecipient =
+    previewRecipient && !isValidAddress(previewRecipient)
+      ? (resolveRecipient(previewRecipient) ?? undefined)
       : undefined
 
   return (
@@ -547,6 +572,7 @@ export function HomeFlow() {
               intent={preview.intent}
               safety={currentSafety ?? preview.safety}
               scheduleSummary={scheduleSummary}
+              resolvedRecipient={previewResolvedRecipient}
               onConfirm={() => {
                 void confirmPreview().catch((err: unknown) => {
                   setError(err instanceof Error ? err.message : 'Transaction failed.')

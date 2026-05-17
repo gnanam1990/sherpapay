@@ -10,7 +10,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { useIntl } from 'react-intl'
-import type { SafetyResult, Intent } from '@sherpapay/core'
+import { formatAddress, type SafetyResult, type Intent } from '@sherpapay/core'
 import { cn } from '@/lib/utils'
 
 export interface ScheduleSummary {
@@ -24,6 +24,8 @@ interface ConfirmationCardProps {
   intent: Intent
   safety: SafetyResult
   scheduleSummary?: ScheduleSummary | undefined
+  /** When the recipient was typed as an alias, the resolved 0x address. */
+  resolvedRecipient?: string | undefined
   onConfirm: () => void
   onCancel: () => void
 }
@@ -32,6 +34,7 @@ export function ConfirmationCard({
   intent,
   safety,
   scheduleSummary,
+  resolvedRecipient,
   onConfirm,
   onCancel,
 }: ConfirmationCardProps) {
@@ -151,6 +154,15 @@ export function ConfirmationCard({
             </p>
           </div>
         )}
+
+        {(intent.kind === 'send' || intent.kind === 'schedule') &&
+          resolvedRecipient &&
+          resolvedRecipient.toLowerCase() !== intent.recipient.toLowerCase() && (
+            <p className="rounded-md border border-celo/30 bg-celo/10 px-3 py-2 text-xs text-foreground">
+              Sending to <strong>{intent.recipient}</strong> →{' '}
+              <span className="font-mono">{formatAddress(resolvedRecipient)}</span>
+            </p>
+          )}
 
         {intent.kind === 'save' && (
           <div className="grid gap-3 sm:grid-cols-3">
