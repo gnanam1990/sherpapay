@@ -1,14 +1,6 @@
 'use client'
 
-import {
-  AlertTriangle,
-  ArrowRight,
-  Check,
-  CheckCircle2,
-  ShieldCheck,
-  X,
-  XCircle,
-} from 'lucide-react'
+import { AlertTriangle, ArrowRight, Check, CheckCircle2, XCircle } from 'lucide-react'
 import { useIntl } from 'react-intl'
 import { formatAddress, type SafetyResult, type Intent } from '@sherpapay/core'
 import { cn } from '@/lib/utils'
@@ -76,155 +68,163 @@ export function ConfirmationCard({
   }
 
   const style = levelStyles[safety.level]
+  const recipientLabel =
+    intent.kind === 'send' || intent.kind === 'schedule'
+      ? intent.recipient.startsWith('0x') && intent.recipient.length > 12
+        ? formatAddress(intent.recipient)
+        : intent.recipient
+      : ''
 
   return (
-    <div className={cn('overflow-hidden rounded-lg border bg-card shadow-soft-panel', style.shell)}>
-      <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
-        <div
+    <div className="glass-card animate-fade-in rounded-3xl p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <span className="meta-label text-foreground/55">— Confirm</span>
+        <span
           className={cn(
-            'inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-xs font-medium',
+            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold',
             style.badge,
           )}
         >
           {style.icon}
-          {style.label}
-        </div>
-        <div className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-          <ShieldCheck className="h-4 w-4" />
-          {safety.checks.length || 1} checks
-        </div>
+          {style.label} · {safety.checks.length || 1} checks
+        </span>
       </div>
 
-      <div className="space-y-4 p-4">
-        {intent.kind === 'send' && (
-          <div className="grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-            <div className="rounded-md border border-border/70 bg-background/50 p-3">
-              <p className="text-xs text-muted-foreground">Send</p>
-              <p className="mt-1 text-lg font-semibold">
-                {intent.amount} {intent.token}
-              </p>
-            </div>
-            <div className="hidden h-9 w-9 place-items-center rounded-md border border-border/70 bg-muted text-muted-foreground sm:grid">
-              <ArrowRight className="h-4 w-4" />
-            </div>
-            <div className="rounded-md border border-border/70 bg-background/50 p-3">
-              <p className="text-xs text-muted-foreground">Recipient</p>
-              <p className="mt-1 break-all font-mono text-sm text-foreground">{intent.recipient}</p>
-            </div>
-          </div>
-        )}
-
-        {intent.kind === 'schedule' && (
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-md border border-border/70 bg-background/50 p-3">
-              <p className="text-xs text-muted-foreground">Amount</p>
-              <p className="mt-1 font-semibold">
-                {intent.amount} {intent.token}
-              </p>
-            </div>
-            <div className="rounded-md border border-border/70 bg-background/50 p-3">
-              <p className="text-xs text-muted-foreground">Recipient</p>
-              <p className="mt-1 break-all font-mono text-sm">{intent.recipient}</p>
-            </div>
-            <div className="rounded-md border border-border/70 bg-background/50 p-3">
-              <p className="text-xs text-muted-foreground">Frequency</p>
-              <p className="mt-1 font-semibold capitalize">{intent.frequency.kind}</p>
-            </div>
-          </div>
-        )}
-
-        {intent.kind === 'schedule' && scheduleSummary && (
-          <div className="space-y-1 rounded-md border border-accent/40 bg-accent/10 p-3 text-xs text-foreground">
-            <p>
-              You&apos;re committing to send {intent.amount} {intent.token} for{' '}
-              <strong>{scheduleSummary.cycles} cycles</strong>.
-            </p>
-            <p>
-              Total locked now: <strong>{scheduleSummary.totalLocked}</strong>
-              {scheduleSummary.totalLockedLocal ? (
-                <> (≈ {scheduleSummary.totalLockedLocal})</>
-              ) : null}{' '}
-              ({intent.amount} {intent.token} × {scheduleSummary.cycles}).
-            </p>
-            <p>
-              Schedule ends: <strong>{scheduleSummary.endsAt}</strong>.
-            </p>
-            <p className="text-muted-foreground">
-              You can cancel anytime and reclaim the unspent escrow.
-            </p>
-          </div>
-        )}
-
-        {(intent.kind === 'send' || intent.kind === 'schedule') &&
-          resolvedRecipient &&
-          resolvedRecipient.toLowerCase() !== intent.recipient.toLowerCase() && (
-            <p className="rounded-md border border-celo/30 bg-celo/10 px-3 py-2 text-xs text-foreground">
-              Sending to <strong>{intent.recipient}</strong> →{' '}
-              <span className="font-mono">{formatAddress(resolvedRecipient)}</span>
-            </p>
+      {(intent.kind === 'send' || intent.kind === 'schedule') && (
+        <p className="mb-4 text-lg font-bold leading-snug text-foreground">
+          Send{' '}
+          <span className="gradient-text">
+            {intent.amount} {intent.token}
+          </span>{' '}
+          to <span className="gradient-text">{recipientLabel}</span>
+          {intent.kind === 'schedule' && (
+            <>
+              {' '}
+              every {intent.frequency.kind}
+              {scheduleSummary ? ` for ${scheduleSummary.cycles} cycles` : ''}
+            </>
           )}
+        </p>
+      )}
 
+      {intent.kind === 'save' && (
+        <p className="mb-4 text-lg font-bold leading-snug text-foreground">
+          Save{' '}
+          <span className="gradient-text">
+            {intent.amount} {intent.token}
+          </span>{' '}
+          toward <span className="gradient-text">{intent.goal.label}</span> every{' '}
+          {intent.frequency.kind}
+        </p>
+      )}
+
+      {(intent.kind === 'send' || intent.kind === 'schedule') &&
+        resolvedRecipient &&
+        resolvedRecipient.toLowerCase() !== intent.recipient.toLowerCase() && (
+          <p className="celo-tag mb-4 rounded-2xl px-3 py-2 text-xs">
+            Sending to <strong>{intent.recipient}</strong> →{' '}
+            <span className="font-mono">{formatAddress(resolvedRecipient)}</span>
+          </p>
+        )}
+
+      <div className="mb-4">
+        {intent.kind === 'send' && (
+          <>
+            <DetailRow label="Token" value={intent.token} />
+            <DetailRow label="Amount" value={`${intent.amount} ${intent.token}`} />
+            <DetailRow label="Recipient" value={recipientLabel} />
+          </>
+        )}
+        {intent.kind === 'schedule' && (
+          <>
+            <DetailRow label="Per cycle" value={`${intent.amount} ${intent.token}`} />
+            <DetailRow label="Frequency" value={intent.frequency.kind} />
+            {scheduleSummary && (
+              <>
+                <DetailRow label="Cycles" value={String(scheduleSummary.cycles)} />
+                <DetailRow
+                  label="Total locked"
+                  value={
+                    scheduleSummary.totalLockedLocal
+                      ? `${scheduleSummary.totalLocked} ≈ ${scheduleSummary.totalLockedLocal}`
+                      : scheduleSummary.totalLocked
+                  }
+                />
+                <DetailRow label="Ends" value={scheduleSummary.endsAt} />
+                <DetailRow
+                  label="Refundable"
+                  value="✓ cancel anytime"
+                  valueClass="text-celo-green"
+                />
+              </>
+            )}
+          </>
+        )}
         {intent.kind === 'save' && (
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-md border border-border/70 bg-background/50 p-3">
-              <p className="text-xs text-muted-foreground">Save</p>
-              <p className="mt-1 font-semibold">
-                {intent.amount} {intent.token}
-              </p>
-            </div>
-            <div className="rounded-md border border-border/70 bg-background/50 p-3">
-              <p className="text-xs text-muted-foreground">Goal</p>
-              <p className="mt-1 font-semibold">{intent.goal.label}</p>
-            </div>
-            <div className="rounded-md border border-border/70 bg-background/50 p-3">
-              <p className="text-xs text-muted-foreground">Frequency</p>
-              <p className="mt-1 font-semibold capitalize">{intent.frequency.kind}</p>
-            </div>
-          </div>
-        )}
-
-        {safety.checks.length > 0 && (
-          <div className="space-y-2">
-            {safety.checks.map((check, i) => {
-              const checkStyle = checkStyles[check.level]
-              return (
-                <div key={i} className={cn('flex items-start gap-2 text-xs', checkStyle.text)}>
-                  {checkStyle.icon}
-                  <p>{check.message}</p>
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-        {!safety.passed && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-            Fix the blocked check above before signing. This prevents failed transfers and wasted
-            gas.
-          </div>
-        )}
-
-        {safety.passed && (
-          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-            <button
-              onClick={onConfirm}
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              {intl.formatMessage({
-                id: intent.kind === 'schedule' ? 'confirm.schedule' : 'confirm.transfer',
-              })}
-              <ArrowRight className="h-4 w-4" />
-            </button>
-            <button
-              onClick={onCancel}
-              className="inline-flex items-center justify-center gap-2 rounded-md border border-border/80 px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-              {intl.formatMessage({ id: 'confirm.cancel' })}
-            </button>
-          </div>
+          <>
+            <DetailRow label="Amount" value={`${intent.amount} ${intent.token}`} />
+            <DetailRow label="Goal" value={intent.goal.label} />
+            <DetailRow label="Frequency" value={intent.frequency.kind} />
+          </>
         )}
       </div>
+
+      {safety.checks.length > 0 && (
+        <div className="mb-4 space-y-2">
+          {safety.checks.map((check, i) => {
+            const checkStyle = checkStyles[check.level]
+            return (
+              <div key={i} className={cn('flex items-start gap-2 text-xs', checkStyle.text)}>
+                {checkStyle.icon}
+                <p>{check.message}</p>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {!safety.passed && (
+        <div className="mb-4 rounded-2xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          Fix the blocked check above before signing. This prevents failed transfers and wasted gas.
+        </div>
+      )}
+
+      {safety.passed && (
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={onCancel}
+            className="rounded-2xl bg-foreground/[0.06] py-3.5 text-sm font-semibold text-foreground transition hover:bg-foreground/[0.12] dark:bg-white/[0.06] dark:hover:bg-white/[0.12]"
+          >
+            {intl.formatMessage({ id: 'confirm.cancel' })}
+          </button>
+          <button
+            onClick={onConfirm}
+            className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-accent-gradient py-3.5 text-sm font-bold text-white shadow-glow-accent transition hover:opacity-95"
+          >
+            {intl.formatMessage({
+              id: intent.kind === 'schedule' ? 'confirm.schedule' : 'confirm.transfer',
+            })}
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DetailRow({
+  label,
+  value,
+  valueClass = '',
+}: {
+  label: string
+  value: string
+  valueClass?: string
+}) {
+  return (
+    <div className="flex justify-between border-b border-foreground/[0.08] py-2.5 last:border-b-0 dark:border-white/[0.06]">
+      <span className="font-mono text-[11px] text-foreground/55">{label}</span>
+      <span className={cn('font-mono text-xs font-semibold', valueClass)}>{value}</span>
     </div>
   )
 }
