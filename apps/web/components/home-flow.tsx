@@ -242,6 +242,18 @@ export function HomeFlow() {
       })
     }
 
+    if (
+      (preview.intent.kind === 'send' || preview.intent.kind === 'schedule') &&
+      preview.intent.recipientType === 'phone' &&
+      resolveRecipient(preview.intent.recipient) === null
+    ) {
+      safety = appendSafetyCheck(safety, {
+        name: 'phone-contact',
+        level: 'block',
+        message: recipientNotFoundMessage(preview.intent.recipient, true),
+      })
+    }
+
     return safety
   }, [isBalanceFetching, isBalanceLoading, preview, shouldReadTokenBalance, tokenBalance])
 
