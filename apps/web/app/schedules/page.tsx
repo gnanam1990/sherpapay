@@ -47,7 +47,7 @@ function ScheduleCard({ scheduleId, chainId }: { scheduleId: Hex; chainId: numbe
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-card/70 p-4 text-sm text-muted-foreground">
+      <div className="glass-card flex items-center gap-2 rounded-2xl p-4 text-sm text-foreground/60">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading schedule…
       </div>
     )
@@ -70,27 +70,41 @@ function ScheduleCard({ scheduleId, chainId }: { scheduleId: Hex; chainId: numbe
     }
   }
 
+  const statusTone =
+    status === 'Active'
+      ? 'bg-celo-green/15 text-celo-green-dark dark:text-celo-green-light'
+      : status === 'Paused'
+        ? 'bg-accent-orange/20 text-accent-orange'
+        : 'bg-foreground/[0.08] text-foreground/55 dark:bg-white/[0.08]'
+
   return (
-    <div className="space-y-3 rounded-lg border border-border/70 bg-card/80 p-4 shadow-soft-panel">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">
-            {amount} {symbol}{' '}
-            <span className="text-muted-foreground">→ {formatAddress(schedule.recipient)}</span>
-          </p>
-          <p className="mt-1 font-mono text-xs text-muted-foreground">
+    <div className="glass-card animate-fade-in space-y-3 rounded-2xl p-4">
+      <div className="flex items-start gap-3.5">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-accent-gradient font-bold text-white">
+          {schedule.recipient.slice(2, 3).toUpperCase()}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-foreground">→ {formatAddress(schedule.recipient)}</p>
+          <p className="mt-0.5 font-mono text-[11px] text-foreground/55">
             {formatAddress(scheduleId)}
           </p>
         </div>
-        <span className="shrink-0 rounded-full border border-border/70 bg-background/50 px-2 py-1 text-xs">
-          {status}
-        </span>
+        <div className="text-right">
+          <p className="font-mono text-[15px] font-bold text-foreground">
+            {amount} {symbol}
+          </p>
+          <span
+            className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusTone}`}
+          >
+            {status}
+          </span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-3 font-mono text-[11px] text-foreground/55">
         <div>
-          <p className="text-foreground">{remainingCycles.toString()} cycles funded</p>
-          <p>remaining escrow</p>
+          <p className="text-foreground">{remainingCycles.toString()}</p>
+          <p>cycles funded</p>
         </div>
         <div>
           <p className="text-foreground">{formatDate(schedule.nextExecution)}</p>
@@ -108,7 +122,7 @@ function ScheduleCard({ scheduleId, chainId }: { scheduleId: Hex; chainId: numbe
             <button
               disabled={busy}
               onClick={() => void run(pause)}
-              className="inline-flex items-center gap-1 rounded-md border border-border/80 px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-2xl bg-foreground/[0.06] px-3.5 py-2 text-xs font-semibold text-foreground transition hover:bg-foreground/[0.12] disabled:opacity-50 dark:bg-white/[0.06] dark:hover:bg-white/[0.12]"
             >
               <Pause className="h-3.5 w-3.5" /> Pause
             </button>
@@ -117,7 +131,7 @@ function ScheduleCard({ scheduleId, chainId }: { scheduleId: Hex; chainId: numbe
             <button
               disabled={busy}
               onClick={() => void run(resume)}
-              className="inline-flex items-center gap-1 rounded-md border border-border/80 px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-2xl bg-foreground/[0.06] px-3.5 py-2 text-xs font-semibold text-foreground transition hover:bg-foreground/[0.12] disabled:opacity-50 dark:bg-white/[0.06] dark:hover:bg-white/[0.12]"
             >
               <Play className="h-3.5 w-3.5" /> Resume
             </button>
@@ -125,7 +139,7 @@ function ScheduleCard({ scheduleId, chainId }: { scheduleId: Hex; chainId: numbe
           <button
             disabled={busy}
             onClick={() => void run(cancel)}
-            className="inline-flex items-center gap-1 rounded-md border border-destructive/50 px-3 py-2 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-2xl border border-destructive/50 px-3.5 py-2 text-xs font-semibold text-destructive transition hover:bg-destructive/10 disabled:opacity-50"
           >
             <X className="h-3.5 w-3.5" /> Cancel &amp; reclaim
           </button>
@@ -154,7 +168,7 @@ function SchedulesView() {
           tone="accent"
         />
       ) : isLoading ? (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="mx-auto flex max-w-3xl items-center gap-2 text-sm text-foreground/60">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading your schedules…
         </div>
       ) : !scheduleIds || scheduleIds.length === 0 ? (
@@ -167,8 +181,10 @@ function SchedulesView() {
           tone="accent"
         />
       ) : (
-        <div className="mx-auto grid w-full max-w-3xl gap-4">
-          <h1 className="text-2xl font-semibold text-foreground">Your schedules</h1>
+        <div className="mx-auto grid w-full max-w-3xl gap-3">
+          <h1 className="mb-1 text-2xl font-extrabold tracking-tight text-foreground">
+            Your schedules
+          </h1>
           {scheduleIds.map((id) => (
             <ScheduleCard key={id} scheduleId={id} chainId={chainId} />
           ))}
