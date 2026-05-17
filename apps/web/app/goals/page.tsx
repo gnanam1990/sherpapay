@@ -79,7 +79,10 @@ function GoalCard({ goalId, chainId }: { goalId: Hex; chainId: number }) {
   }
 
   return (
-    <div className="glass-card animate-fade-in space-y-3.5 rounded-3xl p-5">
+    <div
+      id={`goal-${goalId}`}
+      className="glass-card animate-fade-in scroll-mt-24 space-y-3.5 rounded-3xl p-5"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[15px] font-bold text-foreground">{goal.label}</p>
@@ -164,7 +167,7 @@ function GoalsView() {
       <EmptyState
         icon={Target}
         title="No savings goals yet"
-        description="Goal creation lands with the savings flow (Phase 2 wires the vault contract)."
+        description="Create one from the command page — e.g. “save 5 cUSD weekly for emergency fund target 100”."
         actionHref="/"
         actionLabel="Open command"
         tone="celo"

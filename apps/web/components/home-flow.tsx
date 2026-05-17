@@ -23,12 +23,11 @@ import {
   scheduleEndTime,
   scheduleEscrowTotal,
   vaultAbi,
-  VAULT_ADDRESS,
   frequencyToSeconds,
   goalTargetDate,
 } from '@sherpapay/celo'
 import { useCreateSchedule, useFundSchedule } from '@/lib/scheduler-hooks'
-import { useCreateGoal, useGoalContribution } from '@/lib/vault-hooks'
+import { useCreateGoal } from '@/lib/vault-hooks'
 import {
   amountToWei,
   formatAddress,
@@ -154,7 +153,6 @@ export function HomeFlow() {
   const createSchedule = useCreateSchedule()
   const fundSchedule = useFundSchedule()
   const createGoal = useCreateGoal()
-  const contributeToGoal = useGoalContribution()
   const [preview, setPreview] = useState<PreviewState | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [submittedHash, setSubmittedHash] = useState<Address | undefined>()
@@ -167,7 +165,6 @@ export function HomeFlow() {
   const [goalResult, setGoalResult] = useState<{
     goalId: Address
     txHash: Address
-    funded: boolean
   } | null>(null)
   const previewedSendIntent = preview?.intent.kind === 'send' ? preview.intent : null
   const targetChainId = isSupportedChain(chainId) ? chainId : celo.id
@@ -456,10 +453,11 @@ export function HomeFlow() {
     }
   }
 
-  // Goal flow: createGoal moves no tokens (only stores the Goal struct), so
-  // no approval is needed to create. Approval + contribute are only for the
-  // optional first contribution. The vault treats targetDate/monthly as
-  // advisory metadata — achievement is purely funding-based.
+  // Goal flow is intentionally ONE transaction: createGoal moves no tokens
+  // (it only stores the Goal struct). Funding is split out — the user
+  // contributes from /goals when ready (approve + contribute there). The
+  // vault treats targetDate/monthly as advisory metadata; achievement is
+  // purely funding-based.
   async function confirmGoal(intent: Extract<Intent, { kind: 'save' }>) {
     if (!isConnected || !address) {
       setError(intl.formatMessage({ id: 'error.connect' }))
@@ -498,13 +496,6 @@ export function HomeFlow() {
     const startTime = BigInt(Math.floor(Date.now() / 1000))
     const targetDate = goalTargetDate(startTime, interval, cycles)
 
-    const balance = await publicClient.readContract({
-      address: tokenAddress,
-      abi: erc20Abi,
-      functionName: 'balanceOf',
-      args: [address],
-    })
-
     try {
       setError(null)
       setGoalResult(null)
@@ -530,29 +521,8 @@ export function HomeFlow() {
       }
       const goalId = created.args.id
 
-      // Seed the first contribution only if the wallet can cover it.
-      let funded = false
-      if (contributionWei > ZERO_AMOUNT && balance >= contributionWei) {
-        setGoalStatus(
-          `Approving first contribution (${weiToAmount(contributionWei, intent.token)} ${intent.token})…`,
-        )
-        const approveHash = await writeContractAsync({
-          address: tokenAddress,
-          abi: erc20Abi,
-          functionName: 'approve',
-          args: [VAULT_ADDRESS, contributionWei],
-          chainId: targetChainId,
-        })
-        await publicClient.waitForTransactionReceipt({ hash: approveHash })
-
-        setGoalStatus('Funding first contribution…')
-        const contributeHash = await contributeToGoal(goalId, contributionWei)
-        await publicClient.waitForTransactionReceipt({ hash: contributeHash })
-        funded = true
-      }
-
       setGoalStatus(null)
-      setGoalResult({ goalId, txHash: createHash, funded })
+      setGoalResult({ goalId, txHash: createHash })
     } catch (err: unknown) {
       setGoalStatus(null)
       setError(err instanceof Error ? err.message : 'Goal creation failed.')
@@ -810,14 +780,12 @@ export function HomeFlow() {
         <div className="glass-card mx-auto mt-6 max-w-lg rounded-2xl p-4 text-sm">
           <div className="flex items-center gap-2 font-semibold text-celo-green">
             <CheckCircle2 className="h-4 w-4" />
-            Goal created on Celo
+            Goal created!
           </div>
           <p className="mt-2 text-xs text-foreground/60">
-            Goal id{' '}
-            <span className="font-mono text-foreground">{formatAddress(goalResult.goalId)}</span>
-            {goalResult.funded
-              ? ' · first contribution funded'
-              : ' · not yet funded — contribute from the Goals page'}
+            Funding is separate — head to <span className="font-mono text-foreground">/goals</span>{' '}
+            to contribute when ready. Goal id{' '}
+            <span className="font-mono text-foreground">{formatAddress(goalResult.goalId)}</span>.
           </p>
           <div className="mt-2 flex flex-wrap gap-4">
             <a
@@ -830,10 +798,10 @@ export function HomeFlow() {
               <ExternalLink className="h-3 w-3" />
             </a>
             <a
-              href="/goals"
-              className="inline-flex items-center gap-1 text-xs text-foreground underline"
+              href={`/goals#goal-${goalResult.goalId}`}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-foreground underline"
             >
-              View goals
+              Contribute on Goals
               <ArrowRight className="h-3 w-3" />
             </a>
           </div>

@@ -117,10 +117,10 @@ export function GoalConfirmationCard({
       {/* Honest framing: the vault stores targetDate + monthly as advisory
           metadata. A goal completes purely when funded to target. */}
       <p className="celo-tag mb-4 rounded-2xl px-3 py-2 text-[11px] leading-relaxed">
-        The date is a target, not a lock. Your goal completes as soon as it&apos;s funded to{' '}
-        {summary?.target ?? 'the target'} — contribute on your own pace and withdraw once it&apos;s
-        reached. Creating the goal costs only gas; the first contribution is a separate, optional
-        transfer.
+        Creating the goal costs only gas (1 transaction) — no tokens move yet. Contribute from the{' '}
+        <span className="font-mono">/goals</span> page to start funding. The date is a target, not a
+        lock: your goal completes as soon as it&apos;s funded to {summary?.target ?? 'the target'},
+        and you can withdraw once it&apos;s reached.
       </p>
 
       {!validation.ok && (
