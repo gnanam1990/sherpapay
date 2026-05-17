@@ -59,6 +59,12 @@ export function useContribute(): WriteAction<[Hex, bigint]> {
   )
 }
 
+/**
+ * Adds funds toward a goal. Spec-named alias of {@link useContribute} for the
+ * natural-language goal flow — same on-chain `contribute` call.
+ */
+export const useGoalContribution = useContribute
+
 /** Wraps `withdraw` — withdraw from an achieved goal. */
 export function useWithdraw(): WriteAction<[Hex]> {
   const { writeContractAsync, isPending, error } = useWriteContract()

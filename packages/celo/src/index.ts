@@ -129,4 +129,5 @@ export function getAllTokenAddresses(chainId: number) {
 
 export * from './scheduler-abi.js'
 export * from './vault-abi.js'
+export * from './goal-helpers.js'
 export * from './fx.js'
