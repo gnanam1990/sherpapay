@@ -4,6 +4,8 @@ import {
   loadConfig,
   planExecution,
   dayKey,
+  buildHealthPayload,
+  type HealthInput,
   type Hex,
 } from '../execution.js'
 
@@ -75,5 +77,34 @@ describe('planExecution', () => {
 describe('dayKey', () => {
   it('formats a UTC YYYY-MM-DD key', () => {
     expect(dayKey(new Date('2026-05-17T23:59:00Z'))).toBe('2026-05-17')
+  })
+})
+
+describe('buildHealthPayload', () => {
+  const base: HealthInput = {
+    signer: '0xabc',
+    scheduler: '0xdef',
+    lastSuccessAt: '2026-05-17T00:00:00.000Z',
+    executedToday: 3,
+    pendingDue: 0,
+    walletCelo: '1.25',
+    lastError: null,
+  }
+  const at = new Date('2026-05-17T12:00:00Z')
+
+  it('reports ok with funds and no error', () => {
+    const h = buildHealthPayload(base, at)
+    expect(h.status).toBe('ok')
+    expect(h.checkedAt).toBe('2026-05-17T12:00:00.000Z')
+    expect(h.executedToday).toBe(3)
+  })
+
+  it('is degraded when the signer has zero CELO (cannot pay gas)', () => {
+    expect(buildHealthPayload({ ...base, walletCelo: '0' }, at).status).toBe('degraded')
+    expect(buildHealthPayload({ ...base, walletCelo: '0.0' }, at).status).toBe('degraded')
+  })
+
+  it('is degraded when the last cycle errored', () => {
+    expect(buildHealthPayload({ ...base, lastError: 'rpc timeout' }, at).status).toBe('degraded')
   })
 })

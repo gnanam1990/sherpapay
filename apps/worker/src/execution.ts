@@ -62,3 +62,29 @@ export function planExecution(ids: readonly Hex[]): ExecutionMode {
 export function dayKey(date: Date): string {
   return date.toISOString().slice(0, 10)
 }
+
+export interface HealthInput {
+  signer: string
+  scheduler: string
+  lastSuccessAt: string | null
+  executedToday: number
+  pendingDue: number
+  walletCelo: string
+  lastError: string | null
+}
+
+export interface HealthPayload extends HealthInput {
+  status: 'ok' | 'degraded'
+  checkedAt: string
+}
+
+/**
+ * Builds the /health JSON. `degraded` when the worker can't pay gas
+ * (zero CELO) or the last cycle errored — a signal for leaderboard
+ * reviewers / uptime monitors that the worker is real but unhappy.
+ */
+export function buildHealthPayload(input: HealthInput, now: Date = new Date()): HealthPayload {
+  const broke = Number.parseFloat(input.walletCelo) === 0
+  const status: HealthPayload['status'] = broke || input.lastError !== null ? 'degraded' : 'ok'
+  return { ...input, status, checkedAt: now.toISOString() }
+}

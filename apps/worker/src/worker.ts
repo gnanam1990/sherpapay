@@ -1,9 +1,10 @@
+import { createServer } from 'node:http'
 import cron from 'node-cron'
-import { createPublicClient, createWalletClient, http } from 'viem'
+import { createPublicClient, createWalletClient, http, formatEther } from 'viem'
 import { celo } from 'viem/chains'
 import { privateKeyToAccount } from 'viem/accounts'
 import { schedulerAbi, SCHEDULER_ADDRESS } from '@sherpapay/celo'
-import { loadConfig, planExecution, dayKey, type Hex } from './execution.js'
+import { loadConfig, planExecution, dayKey, buildHealthPayload, type Hex } from './execution.js'
 
 interface Metrics {
   lastSuccessAt: string | null
@@ -124,6 +125,42 @@ async function main(): Promise<void> {
       await executeEachIndividually(ids)
     }
   }
+
+  // Health endpoint — gives reviewers / uptime monitors proof the
+  // worker is real, funded, and running.
+  const healthServer = createServer((req, res) => {
+    if (req.url?.split('?')[0] !== '/health') {
+      res.writeHead(404).end()
+      return
+    }
+    void (async () => {
+      let pendingDue = 0
+      let walletCelo = '0'
+      try {
+        const due = await fetchDueScheduleIds()
+        pendingDue = due.length
+        walletCelo = formatEther(await publicClient.getBalance({ address: account.address }))
+      } catch (err) {
+        metrics.lastError = err instanceof Error ? err.message : 'health_probe_failed'
+      }
+      const payload = buildHealthPayload({
+        signer: account.address,
+        scheduler: SCHEDULER_ADDRESS,
+        lastSuccessAt: metrics.lastSuccessAt,
+        executedToday: metrics.executedToday,
+        pendingDue,
+        walletCelo,
+        lastError: metrics.lastError,
+      })
+      res.writeHead(payload.status === 'ok' ? 200 : 503, {
+        'content-type': 'application/json',
+      })
+      res.end(JSON.stringify(payload))
+    })()
+  })
+  healthServer.listen(config.healthPort, () => {
+    console.log(`Health endpoint on :${config.healthPort}/health`)
+  })
 
   console.log('SherpaPay Worker starting (contract-driven execution)')
   console.log(`Signer: ${account.address}`)
