@@ -7,6 +7,7 @@ import { Globe2, Languages, Phone, UserRoundPlus } from 'lucide-react'
 import { AliasManager } from '@/components/alias-manager'
 import { PhoneManager } from '@/components/phone-manager'
 import { LanguageSwitcher } from '@/components/language-switcher'
+import { CurrencyPicker } from '@/components/currency-picker'
 
 export default function SettingsPage() {
   return (
@@ -78,9 +79,10 @@ export default function SettingsPage() {
                   <Globe2 className="h-4 w-4 text-celo-green-dark dark:text-celo-green-light" />
                   <h2 className="font-bold text-foreground">Display currency</h2>
                 </div>
-                <p className="text-xs text-foreground/55">
-                  Currently derived from your language; a manual picker is on the roadmap.
+                <p className="mb-3 text-xs text-foreground/55">
+                  Override the language-derived currency for amount approximations.
                 </p>
+                <CurrencyPicker />
               </div>
             </section>
           </div>
