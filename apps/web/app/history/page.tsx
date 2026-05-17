@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight, Clock3, ExternalLink, Loader2, Repeat } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Clock3, ExternalLink, Repeat } from 'lucide-react'
 import { formatAddress } from '@sherpapay/core'
+import { SkeletonList } from '@/components/skeleton'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
 import { BottomNav } from '@/components/bottom-nav'
@@ -43,11 +44,7 @@ function HistoryView() {
   }
 
   if (loading) {
-    return (
-      <div className="mx-auto flex max-w-3xl items-center gap-2 text-sm text-foreground/60">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading history…
-      </div>
-    )
+    return <SkeletonList />
   }
 
   if (unavailable) {
@@ -102,14 +99,14 @@ function HistoryView() {
       {filtered.length === 0 ? (
         <p className="text-sm text-foreground/55">No matching transactions.</p>
       ) : (
-        <ul className="glass-card divide-y divide-foreground/[0.06] overflow-hidden rounded-2xl dark:divide-white/[0.06]">
+        <ul className="stagger glass-card divide-y divide-foreground/[0.06] overflow-hidden rounded-2xl dark:divide-white/[0.06]">
           {filtered.map((i) => {
             const Icon =
               i.kind === 'scheduler' ? Repeat : i.direction === 'out' ? ArrowUpRight : ArrowDownLeft
             return (
               <li
                 key={`${i.hash}-${i.token}-${i.direction}`}
-                className="flex items-center gap-3 p-3.5"
+                className="animate-fade-in flex items-center gap-3 p-3.5"
               >
                 <span
                   className={

@@ -184,7 +184,7 @@ export function ConfirmationCard({
       )}
 
       {!safety.passed && (
-        <div className="mb-4 rounded-2xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <div className="error-card mb-4 rounded-2xl px-3 py-2 text-xs">
           Fix the blocked check above before signing. This prevents failed transfers and wasted gas.
         </div>
       )}

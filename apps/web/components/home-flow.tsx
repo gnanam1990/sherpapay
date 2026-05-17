@@ -562,7 +562,7 @@ export function HomeFlow() {
       )}
 
       {error && (
-        <div className="mx-auto mt-6 flex max-w-lg items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+        <div className="error-card animate-fade-in mx-auto mt-6 flex max-w-lg items-start gap-3 rounded-2xl p-4 text-sm">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <p>{error}</p>
         </div>

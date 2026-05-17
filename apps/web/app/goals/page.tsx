@@ -2,7 +2,7 @@
 
 import { useAccount, useChainId, usePublicClient, useWriteContract } from 'wagmi'
 import { celo, celoAlfajores } from 'wagmi/chains'
-import { Loader2, PiggyBank, Target } from 'lucide-react'
+import { PiggyBank, Target } from 'lucide-react'
 import { erc20Abi, VAULT_ADDRESS } from '@sherpapay/celo'
 import { formatAddress, weiToAmount, type TokenSymbol } from '@sherpapay/core'
 import { Providers } from '@/components/providers'
@@ -10,6 +10,7 @@ import { Header } from '@/components/header'
 import { BottomNav } from '@/components/bottom-nav'
 import { EmptyState } from '@/components/empty-state'
 import { TOKENS } from '@/lib/wagmi'
+import { SkeletonCard, SkeletonList } from '@/components/skeleton'
 import {
   useUserGoals,
   useGoal,
@@ -43,11 +44,7 @@ function GoalCard({ goalId, chainId }: { goalId: Hex; chainId: number }) {
   const publicClient = usePublicClient()
 
   if (isLoading) {
-    return (
-      <div className="glass-card flex items-center gap-2 rounded-2xl p-4 text-sm text-foreground/60">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading goal…
-      </div>
-    )
+    return <SkeletonCard />
   }
   if (!goal) return null
 
@@ -160,11 +157,7 @@ function GoalsView() {
     )
   }
   if (isLoading) {
-    return (
-      <div className="mx-auto flex max-w-3xl items-center gap-2 text-sm text-foreground/60">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading your goals…
-      </div>
-    )
+    return <SkeletonList />
   }
   if (!goalIds || goalIds.length === 0) {
     return (
@@ -179,7 +172,7 @@ function GoalsView() {
     )
   }
   return (
-    <div className="mx-auto grid w-full max-w-3xl gap-3">
+    <div className="stagger mx-auto grid w-full max-w-3xl gap-3">
       <h1 className="mb-1 text-2xl font-extrabold tracking-tight text-foreground">
         Your savings goals
       </h1>

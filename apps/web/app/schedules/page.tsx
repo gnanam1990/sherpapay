@@ -2,13 +2,14 @@
 
 import { useAccount, useChainId } from 'wagmi'
 import { celo, celoAlfajores } from 'wagmi/chains'
-import { CalendarClock, Loader2, Pause, Play, X } from 'lucide-react'
+import { CalendarClock, Pause, Play, X } from 'lucide-react'
 import { formatAddress, weiToAmount, type TokenSymbol } from '@sherpapay/core'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
 import { BottomNav } from '@/components/bottom-nav'
 import { EmptyState } from '@/components/empty-state'
 import { TOKENS } from '@/lib/wagmi'
+import { SkeletonCard, SkeletonList } from '@/components/skeleton'
 import {
   useUserSchedules,
   useSchedule,
@@ -46,11 +47,7 @@ function ScheduleCard({ scheduleId, chainId }: { scheduleId: Hex; chainId: numbe
   const cancel = useCancelSchedule()
 
   if (isLoading) {
-    return (
-      <div className="glass-card flex items-center gap-2 rounded-2xl p-4 text-sm text-foreground/60">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading schedule…
-      </div>
-    )
+    return <SkeletonCard />
   }
   if (!schedule) return null
 
@@ -168,9 +165,7 @@ function SchedulesView() {
           tone="accent"
         />
       ) : isLoading ? (
-        <div className="mx-auto flex max-w-3xl items-center gap-2 text-sm text-foreground/60">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading your schedules…
-        </div>
+        <SkeletonList />
       ) : !scheduleIds || scheduleIds.length === 0 ? (
         <EmptyState
           icon={CalendarClock}
@@ -181,7 +176,7 @@ function SchedulesView() {
           tone="accent"
         />
       ) : (
-        <div className="mx-auto grid w-full max-w-3xl gap-3">
+        <div className="stagger mx-auto grid w-full max-w-3xl gap-3">
           <h1 className="mb-1 text-2xl font-extrabold tracking-tight text-foreground">
             Your schedules
           </h1>
