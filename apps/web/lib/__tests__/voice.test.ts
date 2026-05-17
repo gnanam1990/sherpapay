@@ -73,40 +73,43 @@ describe('collectTranscripts', () => {
     return { 0: { transcript, confidence }, length: 1, isFinal }
   }
 
-  it('extracts a single final alternative', () => {
-    const r = collectTranscripts({
-      results: [result('send five cUSD', 0.5, true)],
-      resultIndex: 0,
-    })
+  it('extracts a single final alternative (resultIndex omitted)', () => {
+    const r = collectTranscripts({ results: [result('send five cUSD', 0.5, true)] })
     expect(r.final).toEqual({ transcript: 'send five cUSD', confidence: 0.5 })
     expect(r.interim).toBe('')
   })
 
   it('returns interim text and no final while still speaking', () => {
-    const r = collectTranscripts({
-      results: [result('send five', 0.4, false)],
-      resultIndex: 0,
-    })
+    const r = collectTranscripts({ results: [result('send five', 0.4, false)] })
     expect(r.final).toBeNull()
     expect(r.interim).toBe('send five')
   })
 
-  it('only processes results from resultIndex onward', () => {
+  it('is robust when the engine omits resultIndex (undefined)', () => {
+    // The bug: a numeric-only loop start silently produced no final on
+    // engines that do not set resultIndex.
     const r = collectTranscripts({
-      results: [result('OLD already handled', 0.9, true), result('send nine', 0.4, false)],
-      resultIndex: 1,
+      results: [result('send one cUSD to mom', 0.42, true)],
+      resultIndex: undefined,
     })
-    expect(r.final).toBeNull()
-    expect(r.interim).toBe('send nine')
+    expect(r.final).toEqual({ transcript: 'send one cUSD to mom', confidence: 0.42 })
   })
 
-  it('joins multiple final results and keeps the lowest confidence', () => {
+  it('processes all results regardless of a non-zero resultIndex', () => {
     const r = collectTranscripts({
       results: [result('send five cUSD', 0.8, true), result('to mom', 0.4, true)],
-      resultIndex: 0,
+      resultIndex: 1,
     })
     expect(r.final).toEqual({ transcript: 'send five cUSD to mom', confidence: 0.4 })
     expect(r.interim).toBe('')
+  })
+
+  it('returns both a final and a trailing interim when present', () => {
+    const r = collectTranscripts({
+      results: [result('send five cUSD', 0.7, true), result('to mom', 0.3, false)],
+    })
+    expect(r.final).toEqual({ transcript: 'send five cUSD', confidence: 0.7 })
+    expect(r.interim).toBe('to mom')
   })
 })
 

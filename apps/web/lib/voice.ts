@@ -81,15 +81,20 @@ export interface SpeechResult extends ArrayLike<SpeechAlternative> {
 
 export interface SpeechRecognitionResultEvent {
   results: ArrayLike<SpeechResult>
-  /** Index of the first result not yet delivered. */
-  resultIndex: number
+  /**
+   * Index of the first changed result. Optional on purpose: several
+   * engines (Android Chrome, some WebViews) omit it, and a numeric-only
+   * loop start there silently produced NO final — the field never
+   * filled. We ignore it and walk the whole (small, single-utterance)
+   * list instead. continuous=false keeps the list tiny.
+   */
+  resultIndex?: number
 }
 
 /**
  * Split a recognition event into the finalized transcript (if any) and
- * the still-being-spoken interim text, processing only results from
- * `resultIndex` onward (already-delivered ones are skipped). Final
- * confidence is the lowest across finalized pieces (conservative).
+ * the still-being-spoken interim text. Final confidence is the lowest
+ * across finalized pieces (conservative).
  */
 export function collectTranscripts(event: SpeechRecognitionResultEvent): {
   final: VoiceResult | null
@@ -99,10 +104,9 @@ export function collectTranscripts(event: SpeechRecognitionResultEvent): {
   const interimParts: string[] = []
   let minConfidence = Number.POSITIVE_INFINITY
 
-  for (let i = event.resultIndex; i < event.results.length; i++) {
-    const res = event.results[i]
-    const alt = res?.[0]
-    if (!res || !alt) continue
+  for (const res of Array.from(event.results)) {
+    const alt = res[0]
+    if (!alt) continue
     if (res.isFinal) {
       finalParts.push(alt.transcript)
       if (Number.isFinite(alt.confidence)) {

@@ -7,7 +7,7 @@ import {
   pickRecognitionLang,
   processResult,
   collectTranscripts,
-  VOICE_MIN_CONFIDENCE,
+  type VoiceResult,
   type SpeechRecognitionInstance,
   type SpeechRecognitionResultEvent,
 } from '@/lib/voice'
@@ -20,15 +20,46 @@ interface VoiceInputProps {
   onTranscript: (text: string) => void
   /** Live partial transcript while speaking (''=clear). Optional. */
   onInterim?: (text: string) => void
+  /** Human-readable diagnostic of the last voice stage (on-screen). */
+  onStatus?: (msg: string) => void
   locale: Locale
   disabled?: boolean
 }
 
-export function VoiceInput({ onTranscript, onInterim, locale, disabled }: VoiceInputProps) {
+// Plain-language hint per Web Speech error code so the user can tell us
+// which layer failed without opening DevTools.
+function errorHint(code: string): string {
+  switch (code) {
+    case 'not-allowed':
+    case 'service-not-allowed':
+      return 'Microphone blocked — allow it for this site, then tap again.'
+    case 'no-speech':
+      return "Didn't hear any speech — check the mic, speak, then tap again."
+    case 'audio-capture':
+      return 'No microphone found — check your input device.'
+    case 'network':
+      return 'Speech service unreachable (network). Chrome voice needs an unrestricted connection.'
+    case 'aborted':
+      return 'Voice input stopped.'
+    default:
+      return `Voice error: ${code}.`
+  }
+}
+
+export function VoiceInput({
+  onTranscript,
+  onInterim,
+  onStatus,
+  locale,
+  disabled,
+}: VoiceInputProps) {
   // null until the effect runs; false = unsupported (render nothing).
   const [supported, setSupported] = useState<boolean | null>(null)
   const [state, setState] = useState<VoiceState>('idle')
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
+  // Best transcript heard this session (final preferred, else interim).
+  const heardRef = useRef<VoiceResult | null>(null)
+  const acceptedRef = useRef(false)
 
   useEffect(() => {
     setSupported(getSpeechRecognition(typeof window === 'undefined' ? undefined : window) !== null)
@@ -43,6 +74,12 @@ export function VoiceInput({ onTranscript, onInterim, locale, disabled }: VoiceI
   // spam. Supported browsers reveal it one invisible frame later.
   if (!supported) return null
 
+  function report(msg: string) {
+    // eslint-disable-next-line no-console -- intentional voice debug log
+    console.log(`[voice] ${msg}`)
+    onStatus?.(msg)
+  }
+
   function start() {
     const Ctor = getSpeechRecognition(typeof window === 'undefined' ? undefined : window)
     if (!Ctor) return
@@ -50,14 +87,13 @@ export function VoiceInput({ onTranscript, onInterim, locale, disabled }: VoiceI
     recognitionRef.current = recognition
     recognition.lang = pickRecognitionLang(locale)
     recognition.continuous = false
-    // Interim results give the user live feedback that it's hearing them
-    // (the failure modes were invisible before).
     recognition.interimResults = true
     recognition.maxAlternatives = 1
+    heardRef.current = null
+    acceptedRef.current = false
 
     recognition.onstart = () => {
-      // eslint-disable-next-line no-console -- intentional voice debug log
-      console.log(`[voice] start (lang=${recognition.lang})`)
+      report(`listening (${recognition.lang})…`)
       onInterim?.('')
       setState('listening')
     }
@@ -66,45 +102,49 @@ export function VoiceInput({ onTranscript, onInterim, locale, disabled }: VoiceI
       const { final, interim } = collectTranscripts(e)
 
       if (interim) {
-        // eslint-disable-next-line no-console -- intentional voice debug log
-        console.log(`[voice] interim: "${interim}"`)
+        heardRef.current = { transcript: interim }
         onInterim?.(interim)
       }
 
       if (!final) return
-
-      // eslint-disable-next-line no-console -- intentional voice debug log
-      console.log(`[voice] final: "${final.transcript}" (confidence=${String(final.confidence)})`)
+      heardRef.current = final
       setState('processing')
       const text = processResult(final)
       if (text) {
-        // eslint-disable-next-line no-console -- intentional voice debug log
-        console.log(`[voice] accepted → "${text}"`)
+        acceptedRef.current = true
+        report(`heard "${text}"`)
         onInterim?.('')
         onTranscript(text)
+        setState('idle')
       } else {
-        const why =
-          typeof final.confidence === 'number' && final.confidence < VOICE_MIN_CONFIDENCE
-            ? `confidence ${String(final.confidence)} < ${String(VOICE_MIN_CONFIDENCE)}`
-            : 'empty after filler/number cleaning'
-        // eslint-disable-next-line no-console -- intentional voice debug log
-        console.warn(`[voice] discarded (${why})`)
-        onInterim?.('')
+        // Don't accept here, but don't discard either — onend will fall
+        // back to this transcript rather than fail silently.
+        report(
+          `low confidence (${String(final.confidence)}) for "${final.transcript}" — using it anyway`,
+        )
       }
-      setState('idle')
     }
 
     recognition.onerror = (e: { error: string }) => {
-      // eslint-disable-next-line no-console -- intentional voice debug log
-      console.warn(`[voice] error: ${e.error}`)
+      report(errorHint(e.error))
       onInterim?.('')
       setState(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'denied' : 'idle')
     }
 
     recognition.onend = () => {
-      // eslint-disable-next-line no-console -- intentional voice debug log
-      console.log('[voice] end')
       onInterim?.('')
+      if (!acceptedRef.current) {
+        const heard = heardRef.current
+        // Never silently fail: surface the best transcript heard even if
+        // it was below the confidence gate (the user reviews the field).
+        const fallback = heard ? processResult({ transcript: heard.transcript }) : null
+        if (fallback) {
+          report(`used best-effort transcript "${fallback}" — review before sending`)
+          onTranscript(fallback)
+        } else {
+          report('no usable speech detected — check the mic and try again')
+        }
+      }
       setState((s) => (s === 'listening' || s === 'processing' ? 'idle' : s))
     }
 

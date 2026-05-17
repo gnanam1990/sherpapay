@@ -13,6 +13,7 @@ interface ChatInputProps {
 export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
   const [input, setInput] = useState('')
   const [interim, setInterim] = useState('')
+  const [voiceStatus, setVoiceStatus] = useState('')
   const { locale } = useLocale()
 
   const handleSubmit = useCallback(
@@ -45,8 +46,12 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
         />
         <VoiceInput
           locale={locale}
-          onTranscript={setInput}
+          onTranscript={(t) => {
+            setInput(t)
+            setInterim('')
+          }}
           onInterim={setInterim}
+          onStatus={setVoiceStatus}
           disabled={isLoading}
         />
         <button
@@ -58,12 +63,16 @@ export function ChatInput({ onSubmit, isLoading }: ChatInputProps) {
           <Send className="h-4 w-4" />
         </button>
       </form>
-      {interim && (
+      {interim ? (
         <p className="mt-2 px-2 text-xs text-muted-foreground" aria-live="polite" role="status">
           <span className="mr-1 animate-pulse text-celo">●</span>
           {interim}…
         </p>
-      )}
+      ) : voiceStatus ? (
+        <p className="mt-2 px-2 font-mono text-[11px] text-muted-foreground" role="status">
+          🎙 {voiceStatus}
+        </p>
+      ) : null}
     </div>
   )
 }
