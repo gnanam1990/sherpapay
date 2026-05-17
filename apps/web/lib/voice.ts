@@ -45,7 +45,14 @@ export interface VoiceResult {
   confidence?: number
 }
 
-const MIN_CONFIDENCE = 0.7
+/**
+ * Lenient on purpose. Real-world Web Speech (mobile speakers, accents,
+ * ambient noise) routinely returns 0.4–0.6 confidence even for correct
+ * transcripts; the textbook 0.7 silently drops them. The user reviews
+ * and can edit the input field before submitting, so a permissive gate
+ * with a visible result beats a strict gate that fails silently.
+ */
+export const VOICE_MIN_CONFIDENCE = 0.3
 
 /**
  * Clean a recognition result, discarding low-confidence or empty ones.
@@ -53,7 +60,7 @@ const MIN_CONFIDENCE = 0.7
  */
 export function processResult(
   result: VoiceResult,
-  minConfidence: number = MIN_CONFIDENCE,
+  minConfidence: number = VOICE_MIN_CONFIDENCE,
 ): string | null {
   const { transcript, confidence } = result
   if (typeof confidence === 'number' && Number.isFinite(confidence) && confidence < minConfidence) {
@@ -63,8 +70,58 @@ export function processResult(
   return cleaned.length > 0 ? cleaned : null
 }
 
+export interface SpeechAlternative {
+  transcript: string
+  confidence: number
+}
+
+export interface SpeechResult extends ArrayLike<SpeechAlternative> {
+  isFinal: boolean
+}
+
 export interface SpeechRecognitionResultEvent {
-  results: ArrayLike<ArrayLike<{ transcript: string; confidence: number }>>
+  results: ArrayLike<SpeechResult>
+  /** Index of the first result not yet delivered. */
+  resultIndex: number
+}
+
+/**
+ * Split a recognition event into the finalized transcript (if any) and
+ * the still-being-spoken interim text, processing only results from
+ * `resultIndex` onward (already-delivered ones are skipped). Final
+ * confidence is the lowest across finalized pieces (conservative).
+ */
+export function collectTranscripts(event: SpeechRecognitionResultEvent): {
+  final: VoiceResult | null
+  interim: string
+} {
+  const finalParts: string[] = []
+  const interimParts: string[] = []
+  let minConfidence = Number.POSITIVE_INFINITY
+
+  for (let i = event.resultIndex; i < event.results.length; i++) {
+    const res = event.results[i]
+    const alt = res?.[0]
+    if (!res || !alt) continue
+    if (res.isFinal) {
+      finalParts.push(alt.transcript)
+      if (Number.isFinite(alt.confidence)) {
+        minConfidence = Math.min(minConfidence, alt.confidence)
+      }
+    } else {
+      interimParts.push(alt.transcript)
+    }
+  }
+
+  const finalText = finalParts.join(' ').replace(/\s+/g, ' ').trim()
+  const final: VoiceResult | null = finalText
+    ? {
+        transcript: finalText,
+        confidence: Number.isFinite(minConfidence) ? minConfidence : undefined,
+      }
+    : null
+
+  return { final, interim: interimParts.join(' ').replace(/\s+/g, ' ').trim() }
 }
 
 export interface SpeechRecognitionInstance {

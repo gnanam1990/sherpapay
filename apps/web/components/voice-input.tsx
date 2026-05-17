@@ -6,6 +6,8 @@ import {
   getSpeechRecognition,
   pickRecognitionLang,
   processResult,
+  collectTranscripts,
+  VOICE_MIN_CONFIDENCE,
   type SpeechRecognitionInstance,
   type SpeechRecognitionResultEvent,
 } from '@/lib/voice'
@@ -16,11 +18,13 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'denied'
 
 interface VoiceInputProps {
   onTranscript: (text: string) => void
+  /** Live partial transcript while speaking (''=clear). Optional. */
+  onInterim?: (text: string) => void
   locale: Locale
   disabled?: boolean
 }
 
-export function VoiceInput({ onTranscript, locale, disabled }: VoiceInputProps) {
+export function VoiceInput({ onTranscript, onInterim, locale, disabled }: VoiceInputProps) {
   // null until the effect runs; false = unsupported (render nothing).
   const [supported, setSupported] = useState<boolean | null>(null)
   const [state, setState] = useState<VoiceState>('idle')
@@ -46,25 +50,61 @@ export function VoiceInput({ onTranscript, locale, disabled }: VoiceInputProps) 
     recognitionRef.current = recognition
     recognition.lang = pickRecognitionLang(locale)
     recognition.continuous = false
-    recognition.interimResults = false
+    // Interim results give the user live feedback that it's hearing them
+    // (the failure modes were invisible before).
+    recognition.interimResults = true
     recognition.maxAlternatives = 1
 
     recognition.onstart = () => {
+      // eslint-disable-next-line no-console -- intentional voice debug log
+      console.log(`[voice] start (lang=${recognition.lang})`)
+      onInterim?.('')
       setState('listening')
     }
+
     recognition.onresult = (e: SpeechRecognitionResultEvent) => {
+      const { final, interim } = collectTranscripts(e)
+
+      if (interim) {
+        // eslint-disable-next-line no-console -- intentional voice debug log
+        console.log(`[voice] interim: "${interim}"`)
+        onInterim?.(interim)
+      }
+
+      if (!final) return
+
+      // eslint-disable-next-line no-console -- intentional voice debug log
+      console.log(`[voice] final: "${final.transcript}" (confidence=${String(final.confidence)})`)
       setState('processing')
-      const alt = e.results?.[0]?.[0]
-      const text = alt
-        ? processResult({ transcript: alt.transcript, confidence: alt.confidence })
-        : null
-      if (text) onTranscript(text)
+      const text = processResult(final)
+      if (text) {
+        // eslint-disable-next-line no-console -- intentional voice debug log
+        console.log(`[voice] accepted → "${text}"`)
+        onInterim?.('')
+        onTranscript(text)
+      } else {
+        const why =
+          typeof final.confidence === 'number' && final.confidence < VOICE_MIN_CONFIDENCE
+            ? `confidence ${String(final.confidence)} < ${String(VOICE_MIN_CONFIDENCE)}`
+            : 'empty after filler/number cleaning'
+        // eslint-disable-next-line no-console -- intentional voice debug log
+        console.warn(`[voice] discarded (${why})`)
+        onInterim?.('')
+      }
       setState('idle')
     }
+
     recognition.onerror = (e: { error: string }) => {
+      // eslint-disable-next-line no-console -- intentional voice debug log
+      console.warn(`[voice] error: ${e.error}`)
+      onInterim?.('')
       setState(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'denied' : 'idle')
     }
+
     recognition.onend = () => {
+      // eslint-disable-next-line no-console -- intentional voice debug log
+      console.log('[voice] end')
+      onInterim?.('')
       setState((s) => (s === 'listening' || s === 'processing' ? 'idle' : s))
     }
 

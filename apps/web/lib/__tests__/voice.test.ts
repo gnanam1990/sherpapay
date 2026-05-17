@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { pickRecognitionLang, cleanTranscript, processResult, getSpeechRecognition } from '../voice'
+import {
+  pickRecognitionLang,
+  cleanTranscript,
+  processResult,
+  getSpeechRecognition,
+  collectTranscripts,
+  VOICE_MIN_CONFIDENCE,
+} from '../voice'
 
 describe('pickRecognitionLang', () => {
   it('maps each supported locale to a BCP-47 tag', () => {
@@ -36,13 +43,18 @@ describe('cleanTranscript', () => {
 })
 
 describe('processResult', () => {
-  it('discards results below the 0.7 confidence threshold', () => {
-    expect(processResult({ transcript: 'send five cUSD', confidence: 0.6 })).toBeNull()
+  it('uses a lenient 0.3 default threshold (real-world Web Speech is noisy)', () => {
+    expect(VOICE_MIN_CONFIDENCE).toBe(0.3)
   })
 
-  it('accepts results at or above 0.7', () => {
-    expect(processResult({ transcript: 'send five cUSD', confidence: 0.7 })).toBe('send 5 cUSD')
-    expect(processResult({ transcript: 'send five cUSD', confidence: 0.95 })).toBe('send 5 cUSD')
+  it('discards results below 0.3', () => {
+    expect(processResult({ transcript: 'send five cUSD', confidence: 0.2 })).toBeNull()
+  })
+
+  it('accepts mid/low-confidence results that 0.7 would have dropped', () => {
+    expect(processResult({ transcript: 'send five cUSD', confidence: 0.3 })).toBe('send 5 cUSD')
+    expect(processResult({ transcript: 'send five cUSD', confidence: 0.45 })).toBe('send 5 cUSD')
+    expect(processResult({ transcript: 'send five cUSD', confidence: 0.6 })).toBe('send 5 cUSD')
   })
 
   it('accepts when confidence is not reported (undefined/NaN)', () => {
@@ -53,6 +65,48 @@ describe('processResult', () => {
   it('returns null for an empty/filler-only transcript', () => {
     expect(processResult({ transcript: '   ', confidence: 0.9 })).toBeNull()
     expect(processResult({ transcript: 'um uh', confidence: 0.9 })).toBeNull()
+  })
+})
+
+describe('collectTranscripts', () => {
+  function result(transcript: string, confidence: number, isFinal: boolean) {
+    return { 0: { transcript, confidence }, length: 1, isFinal }
+  }
+
+  it('extracts a single final alternative', () => {
+    const r = collectTranscripts({
+      results: [result('send five cUSD', 0.5, true)],
+      resultIndex: 0,
+    })
+    expect(r.final).toEqual({ transcript: 'send five cUSD', confidence: 0.5 })
+    expect(r.interim).toBe('')
+  })
+
+  it('returns interim text and no final while still speaking', () => {
+    const r = collectTranscripts({
+      results: [result('send five', 0.4, false)],
+      resultIndex: 0,
+    })
+    expect(r.final).toBeNull()
+    expect(r.interim).toBe('send five')
+  })
+
+  it('only processes results from resultIndex onward', () => {
+    const r = collectTranscripts({
+      results: [result('OLD already handled', 0.9, true), result('send nine', 0.4, false)],
+      resultIndex: 1,
+    })
+    expect(r.final).toBeNull()
+    expect(r.interim).toBe('send nine')
+  })
+
+  it('joins multiple final results and keeps the lowest confidence', () => {
+    const r = collectTranscripts({
+      results: [result('send five cUSD', 0.8, true), result('to mom', 0.4, true)],
+      resultIndex: 0,
+    })
+    expect(r.final).toEqual({ transcript: 'send five cUSD to mom', confidence: 0.4 })
+    expect(r.interim).toBe('')
   })
 })
 
