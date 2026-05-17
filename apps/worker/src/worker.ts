@@ -19,13 +19,13 @@ const metrics: Metrics = {
   lastError: null,
 }
 
-function recordSuccess(): void {
+function recordSuccess(count = 1): void {
   const today = dayKey(new Date())
   if (today !== metrics.todayKey) {
     metrics.todayKey = today
     metrics.executedToday = 0
   }
-  metrics.executedToday += 1
+  metrics.executedToday += count
   metrics.lastSuccessAt = new Date().toISOString()
   metrics.lastError = null
 }
@@ -64,6 +64,33 @@ async function main(): Promise<void> {
     return txHash
   }
 
+  // One tx for all due ids — cheaper gas than N executeDuePayment calls.
+  async function executeBatch(ids: readonly Hex[]): Promise<Hex> {
+    const txHash = await walletClient.writeContract({
+      address: SCHEDULER_ADDRESS,
+      abi: schedulerAbi,
+      functionName: 'executeBatch',
+      args: [ids],
+    })
+    await publicClient.waitForTransactionReceipt({ hash: txHash })
+    return txHash
+  }
+
+  // Per-id fallback when a batch tx fails (e.g. one bad schedule
+  // shouldn't strand the rest).
+  async function executeEachIndividually(ids: readonly Hex[]): Promise<void> {
+    for (const id of ids) {
+      try {
+        const txHash = await executeDue(id)
+        recordSuccess()
+        console.log(`Executed ${id} → ${txHash}`)
+      } catch (err) {
+        metrics.lastError = err instanceof Error ? err.message : 'execution_failed'
+        console.error(`Execution failed for ${id}:`, err)
+      }
+    }
+  }
+
   async function processDue(): Promise<void> {
     let ids: readonly Hex[]
     try {
@@ -74,21 +101,27 @@ async function main(): Promise<void> {
       return
     }
 
-    if (planExecution(ids) === 'none') {
+    const mode = planExecution(ids)
+    if (mode === 'none') {
       console.log('No due schedules.')
       return
     }
 
-    console.log(`Found ${ids.length} due schedule(s); executing individually.`)
-    for (const id of ids) {
-      try {
-        const txHash = await executeDue(id)
-        recordSuccess()
-        console.log(`Executed ${id} → ${txHash}`)
-      } catch (err) {
-        metrics.lastError = err instanceof Error ? err.message : 'execution_failed'
-        console.error(`Execution failed for ${id}:`, err)
-      }
+    if (mode === 'single') {
+      await executeEachIndividually(ids)
+      return
+    }
+
+    // mode === 'batch': one tx for all; fall back to per-id on failure.
+    console.log(`Found ${ids.length} due schedules; executing as a batch.`)
+    try {
+      const txHash = await executeBatch(ids)
+      recordSuccess(ids.length)
+      console.log(`Batch executed ${ids.length} schedules → ${txHash}`)
+    } catch (err) {
+      metrics.lastError = err instanceof Error ? err.message : 'batch_failed'
+      console.error('Batch execution failed; falling back to individual:', err)
+      await executeEachIndividually(ids)
     }
   }
 
