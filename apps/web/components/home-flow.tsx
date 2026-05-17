@@ -45,6 +45,8 @@ import { runSafetyChecks } from '@sherpapay/safety'
 import { ChatInput } from '@/components/chat-input'
 import { ConfirmationCard } from '@/components/confirmation-card'
 import { GoalConfirmationCard, type GoalSummary } from '@/components/goal-confirmation-card'
+import { BatchConfirmationCard, type BatchRow } from '@/components/batch-confirmation-card'
+import { executeBatch, type BatchItem } from '@/lib/batch-send'
 import { useLocalCurrency } from '@/lib/use-fx'
 import { useAliases } from '@/lib/use-aliases'
 import { usePhoneMap } from '@/lib/use-phone-map'
@@ -174,6 +176,12 @@ export function HomeFlow() {
     goalId: Address
     txHash: Address
   } | null>(null)
+  const [batchItems, setBatchItems] = useState<BatchItem[] | null>(null)
+  const [batchRunning, setBatchRunning] = useState(false)
+  const [batchSummary, setBatchSummary] = useState<{
+    succeeded: number
+    failed: number
+  } | null>(null)
   const previewedSendIntent = preview?.intent.kind === 'send' ? preview.intent : null
   const targetChainId = isSupportedChain(chainId) ? chainId : celo.id
   const previewTokenAddress = previewedSendIntent
@@ -266,6 +274,12 @@ export function HomeFlow() {
     return resolved && isValidAddress(resolved) ? (resolved as Address) : null
   }
 
+  function resetBatch() {
+    setBatchItems(null)
+    setBatchRunning(false)
+    setBatchSummary(null)
+  }
+
   function resetPreview() {
     setPreview(null)
     setError(null)
@@ -274,6 +288,7 @@ export function HomeFlow() {
     setScheduleResult(null)
     setGoalStatus(null)
     setGoalResult(null)
+    resetBatch()
   }
 
   function previewPrompt(input: string) {
@@ -283,6 +298,7 @@ export function HomeFlow() {
     setScheduleResult(null)
     setGoalStatus(null)
     setGoalResult(null)
+    resetBatch()
 
     const intent = parse(input)
     if (intent.kind === 'unknown') {
@@ -319,6 +335,11 @@ export function HomeFlow() {
 
     if (intent.kind === 'save') {
       await confirmGoal(intent)
+      return
+    }
+
+    if (intent.kind === 'batch') {
+      await confirmBatch(intent)
       return
     }
 
@@ -546,6 +567,88 @@ export function HomeFlow() {
     }
   }
 
+  // Batch is N sequential erc20 transfers (no atomic batch on-chain).
+  async function confirmBatch(intent: Extract<Intent, { kind: 'batch' }>) {
+    if (!isConnected || !address) {
+      setError(intl.formatMessage({ id: 'error.connect' }))
+      return
+    }
+    if (!publicClient) {
+      setError('No Celo RPC client available. Reconnect and try again.')
+      return
+    }
+    if (!isSupportedChain(chainId)) {
+      await switchChainAsync({ chainId: targetChainId })
+    }
+
+    const tokenAddress = TOKENS[targetChainId][intent.token] as Address
+    const amountWei = amountToWei(intent.amount, intent.token)
+    if (amountWei <= ZERO_AMOUNT) {
+      setError(intl.formatMessage({ id: 'error.amountZero' }))
+      return
+    }
+
+    const addresses: Address[] = []
+    const unresolved: string[] = []
+    for (const r of intent.recipients) {
+      const a = resolveRecipient(r)
+      if (a) addresses.push(a)
+      else unresolved.push(r)
+    }
+    if (unresolved.length > 0) {
+      setError(
+        `Can't resolve ${unresolved.join(', ')}. Add them in Settings, or use full 0x addresses.`,
+      )
+      return
+    }
+
+    const total = amountWei * BigInt(addresses.length)
+    const balance = await publicClient.readContract({
+      address: tokenAddress,
+      abi: erc20Abi,
+      functionName: 'balanceOf',
+      args: [address],
+    })
+    if (balance < total) {
+      setError(
+        `Batch needs ${weiToAmount(total, intent.token)} ${intent.token} (${intent.amount} × ${addresses.length}), but you have ${weiToAmount(balance, intent.token)} ${intent.token}.`,
+      )
+      return
+    }
+
+    try {
+      setError(null)
+      setBatchSummary(null)
+      setBatchRunning(true)
+      const summary = await executeBatch(addresses, {
+        submit: (to) =>
+          writeContractAsync({
+            address: tokenAddress,
+            abi: erc20Abi,
+            functionName: 'transfer',
+            args: [to as Address, amountWei],
+            chainId: targetChainId,
+          }),
+        confirm: async (hash) => {
+          await publicClient.waitForTransactionReceipt({ hash: hash as Address })
+        },
+        onUpdate: (items) => {
+          setBatchItems(items)
+        },
+      })
+      setBatchSummary({ succeeded: summary.succeeded, failed: summary.failed })
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Batch send failed.')
+    } finally {
+      setBatchRunning(false)
+    }
+  }
+
+  const previewBatchIntent = preview?.intent.kind === 'batch' ? preview.intent : null
+  const batchRows: BatchRow[] = previewBatchIntent
+    ? previewBatchIntent.recipients.map((r) => ({ raw: r, address: resolveRecipient(r) }))
+    : []
+
   const previewScheduleIntent = preview?.intent.kind === 'schedule' ? preview.intent : null
   const scheduleInterval = previewScheduleIntent
     ? intervalSeconds(previewScheduleIntent.frequency)
@@ -684,7 +787,22 @@ export function HomeFlow() {
             </div>
             <CheckCircle2 className="h-5 w-5 shrink-0 text-celo-green" />
           </div>
-          {previewGoalIntent && goalValidation ? (
+          {previewBatchIntent ? (
+            <BatchConfirmationCard
+              rows={batchRows}
+              token={previewBatchIntent.token}
+              amountEach={previewBatchIntent.amount}
+              items={batchItems}
+              running={batchRunning}
+              summary={batchSummary}
+              onConfirm={() => {
+                void confirmPreview().catch((err: unknown) => {
+                  setError(err instanceof Error ? err.message : 'Batch send failed.')
+                })
+              }}
+              onCancel={resetPreview}
+            />
+          ) : previewGoalIntent && goalValidation ? (
             <GoalConfirmationCard
               intent={previewGoalIntent}
               safety={currentSafety ?? preview.safety}
