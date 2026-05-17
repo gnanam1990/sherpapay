@@ -50,7 +50,8 @@ export function BatchConfirmationCard({
 }: BatchConfirmationCardProps) {
   const n = rows.length
   const allResolved = rows.every((r) => r.address !== null)
-  const canSend = allResolved && !running && !summary
+  const validAmount = Number(amountEach) > 0
+  const canSend = allResolved && validAmount && !running && !summary
 
   return (
     <div className="glass-card animate-fade-in rounded-3xl p-6">
@@ -63,7 +64,7 @@ export function BatchConfirmationCard({
               ? summary.failed === 0
                 ? 'bg-celo/15 text-celo'
                 : 'bg-accent/20 text-accent'
-              : allResolved
+              : allResolved && validAmount
                 ? 'bg-celo/15 text-celo'
                 : 'bg-destructive/15 text-destructive',
           )}
@@ -73,13 +74,13 @@ export function BatchConfirmationCard({
               <CheckCircle2 className="h-4 w-4" />
               {summary.succeeded} ok · {summary.failed} failed
             </>
-          ) : allResolved ? (
+          ) : allResolved && validAmount ? (
             <>
               <CheckCircle2 className="h-4 w-4" /> Ready
             </>
           ) : (
             <>
-              <AlertTriangle className="h-4 w-4" /> Unresolved
+              <AlertTriangle className="h-4 w-4" /> Not ready
             </>
           )}
         </span>
@@ -127,6 +128,13 @@ export function BatchConfirmationCard({
           )
         })}
       </ul>
+
+      {!validAmount && !summary && (
+        <div className="error-card mb-4 rounded-2xl px-3 py-2 text-xs">
+          Amount must be greater than zero. Include a currency next to the number, e.g.{' '}
+          <span className="font-mono">send 5 cUSD to a, b</span>.
+        </div>
+      )}
 
       {!allResolved && !summary && (
         <div className="error-card mb-4 rounded-2xl px-3 py-2 text-xs">
