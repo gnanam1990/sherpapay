@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 export interface ScheduleSummary {
   cycles: number
   totalLocked: string
+  totalLockedLocal?: string | null
   endsAt: string
 }
 
@@ -136,8 +137,11 @@ export function ConfirmationCard({
               <strong>{scheduleSummary.cycles} cycles</strong>.
             </p>
             <p>
-              Total locked now: <strong>{scheduleSummary.totalLocked}</strong> ({intent.amount}{' '}
-              {intent.token} × {scheduleSummary.cycles}).
+              Total locked now: <strong>{scheduleSummary.totalLocked}</strong>
+              {scheduleSummary.totalLockedLocal ? (
+                <> (≈ {scheduleSummary.totalLockedLocal})</>
+              ) : null}{' '}
+              ({intent.amount} {intent.token} × {scheduleSummary.cycles}).
             </p>
             <p>
               Schedule ends: <strong>{scheduleSummary.endsAt}</strong>.

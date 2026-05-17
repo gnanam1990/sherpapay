@@ -53,6 +53,7 @@ import { parse } from '@sherpapay/parser'
 import { runSafetyChecks } from '@sherpapay/safety'
 import { ChatInput } from '@/components/chat-input'
 import { ConfirmationCard } from '@/components/confirmation-card'
+import { useLocalCurrency } from '@/lib/use-fx'
 import { TOKENS } from '@/lib/wagmi'
 
 type Address = `0x${string}`
@@ -146,6 +147,7 @@ function describeUnsupportedIntent(intent: Intent): string | null {
 
 export function HomeFlow() {
   const intl = useIntl()
+  const fx = useLocalCurrency()
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
   const { isMiniPay } = useMiniPay()
@@ -435,25 +437,29 @@ export function HomeFlow() {
     : null
   const scheduleSummary =
     previewScheduleIntent && scheduleInterval !== null
-      ? {
-          cycles: DEFAULT_SCHEDULE_CYCLES,
-          totalLocked: `${weiToAmount(
+      ? (() => {
+          const escrowAmount = weiToAmount(
             scheduleEscrowTotal(
               amountToWei(previewScheduleIntent.amount, previewScheduleIntent.token),
               DEFAULT_SCHEDULE_CYCLES,
             ),
             previewScheduleIntent.token,
-          )} ${previewScheduleIntent.token}`,
-          endsAt: new Date(
-            Number(
-              scheduleEndTime(
-                BigInt(Math.floor(Date.now() / 1000)),
-                scheduleInterval,
-                DEFAULT_SCHEDULE_CYCLES,
-              ),
-            ) * 1000,
-          ).toLocaleDateString(),
-        }
+          )
+          return {
+            cycles: DEFAULT_SCHEDULE_CYCLES,
+            totalLocked: `${escrowAmount} ${previewScheduleIntent.token}`,
+            totalLockedLocal: fx.format(Number(escrowAmount)),
+            endsAt: new Date(
+              Number(
+                scheduleEndTime(
+                  BigInt(Math.floor(Date.now() / 1000)),
+                  scheduleInterval,
+                  DEFAULT_SCHEDULE_CYCLES,
+                ),
+              ) * 1000,
+            ).toLocaleDateString(),
+          }
+        })()
       : undefined
 
   return (
