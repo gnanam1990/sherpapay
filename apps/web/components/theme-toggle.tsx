@@ -11,7 +11,7 @@ export function ThemeToggle() {
     setMounted(true)
   }, [])
 
-  if (!mounted) return <div className="h-9 w-9" />
+  if (!mounted) return <div className="h-11 w-11" />
 
   return (
     <button
@@ -19,8 +19,8 @@ export function ThemeToggle() {
       onClick={() => {
         setTheme(theme === 'dark' ? 'light' : 'dark')
       }}
-      className="flex h-9 w-9 items-center justify-center rounded-full bg-white/40 text-foreground transition hover:bg-white/60 dark:bg-white/10 dark:hover:bg-white/20"
-      aria-label="Toggle theme"
+      className="flex h-11 w-11 items-center justify-center rounded-full bg-white/40 text-foreground transition hover:bg-white/60 dark:bg-white/10 dark:hover:bg-white/20"
+      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       {theme === 'dark' ? '☀' : '☾'}
     </button>

@@ -25,11 +25,15 @@ export function Header() {
   return (
     <header className="sticky top-4 z-50 mx-auto w-full max-w-5xl px-4">
       <div className="glass-nav flex items-center justify-between rounded-3xl px-5 py-2.5">
-        <Link href="/" className="flex items-center gap-2 font-bold text-foreground">
+        <Link
+          href="/"
+          aria-label="SherpaPay home"
+          className="flex shrink-0 items-center gap-2 font-bold text-foreground"
+        >
           <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-celo-green text-sm font-extrabold text-[#0d2818] shadow-glow-celo">
             S
           </span>
-          <span>SherpaPay</span>
+          <span className="hidden sm:inline">SherpaPay</span>
         </Link>
 
         <nav className="hidden items-center gap-5 text-sm font-medium md:flex">
