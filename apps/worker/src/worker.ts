@@ -1,89 +1,114 @@
 import cron from 'node-cron'
+import { createPublicClient, createWalletClient, http } from 'viem'
+import { celo } from 'viem/chains'
+import { privateKeyToAccount } from 'viem/accounts'
+import { schedulerAbi, SCHEDULER_ADDRESS } from '@sherpapay/celo'
+import { loadConfig, planExecution, dayKey, type Hex } from './execution.js'
 
-const CRON_SCHEDULE = process.env.CRON_SCHEDULE ?? '* * * * *' // Every minute
-
-interface ScheduleDue {
-  id: string
-  onchainId: string | null
-  recipientAddress: string
-  token: string
-  amountWei: string
-  userId: string
+interface Metrics {
+  lastSuccessAt: string | null
+  executedToday: number
+  todayKey: string
+  lastError: string | null
 }
 
-async function fetchDueSchedules(): Promise<ScheduleDue[]> {
-  const apiUrl = process.env.API_URL ?? 'http://localhost:3001'
-  try {
-    const res = await fetch(`${apiUrl}/api/schedules/due?limit=50`)
-    if (!res.ok) return []
-    const data = (await res.json()) as { schedules: ScheduleDue[] }
-    return data.schedules ?? []
-  } catch (err) {
-    console.error('Failed to fetch due schedules:', err)
-    return []
-  }
+const metrics: Metrics = {
+  lastSuccessAt: null,
+  executedToday: 0,
+  todayKey: dayKey(new Date()),
+  lastError: null,
 }
 
-function executeSchedule(schedule: ScheduleDue): {
-  success: boolean
-  txHash?: string
-  error?: string
-} {
-  console.log(
-    `Executing schedule ${schedule.id} for ${schedule.amountWei} ${schedule.token} to ${schedule.recipientAddress}`,
-  )
-
-  // In production, this would:
-  // 1. Check sender balance
-  // 2. Submit transaction to SherpaPayScheduler.executeDuePayment(onchainId)
-  // 3. Wait for confirmation
-  // 4. Return result
-
-  return {
-    success: true,
-    txHash: `0x${Buffer.from(schedule.id).toString('hex').slice(0, 64)}`,
+function recordSuccess(): void {
+  const today = dayKey(new Date())
+  if (today !== metrics.todayKey) {
+    metrics.todayKey = today
+    metrics.executedToday = 0
   }
-}
-
-async function processSchedules(): Promise<void> {
-  console.log('Checking for due schedules...')
-
-  const dueSchedules = await fetchDueSchedules()
-  console.log(`Found ${dueSchedules.length} due schedules`)
-
-  for (const schedule of dueSchedules) {
-    try {
-      const result = executeSchedule(schedule)
-
-      if (result.success) {
-        console.log(`Schedule ${schedule.id} executed successfully. TX: ${result.txHash}`)
-      } else {
-        console.error(`Schedule ${schedule.id} failed: ${result.error}`)
-      }
-    } catch (err) {
-      console.error(`Error executing schedule ${schedule.id}:`, err)
-    }
-  }
+  metrics.executedToday += 1
+  metrics.lastSuccessAt = new Date().toISOString()
+  metrics.lastError = null
 }
 
 async function main(): Promise<void> {
-  console.log(`SherpaPay Worker starting...`)
-  console.log(`Cron schedule: ${CRON_SCHEDULE}`)
+  // loadConfig throws on a missing/placeholder key → caught below,
+  // so the worker fails loudly at startup and never fakes executions.
+  const config = loadConfig(process.env)
+  const account = privateKeyToAccount(config.privateKey)
 
-  // Run immediately on start
-  await processSchedules()
+  const publicClient = createPublicClient({ chain: celo, transport: http(config.rpcUrl) })
+  const walletClient = createWalletClient({
+    account,
+    chain: celo,
+    transport: http(config.rpcUrl),
+  })
 
-  // Schedule recurring execution
-  cron.schedule(CRON_SCHEDULE, () => {
-    void processSchedules().catch((err: unknown) => {
-      console.error('Scheduled worker run failed:', err)
+  // Due ids come straight from the contract — the source of truth.
+  async function fetchDueScheduleIds(): Promise<readonly Hex[]> {
+    return publicClient.readContract({
+      address: SCHEDULER_ADDRESS,
+      abi: schedulerAbi,
+      functionName: 'getDueSchedules',
+      args: [BigInt(config.dueLimit)],
+    })
+  }
+
+  async function executeDue(scheduleId: Hex): Promise<Hex> {
+    const txHash = await walletClient.writeContract({
+      address: SCHEDULER_ADDRESS,
+      abi: schedulerAbi,
+      functionName: 'executeDuePayment',
+      args: [scheduleId],
+    })
+    await publicClient.waitForTransactionReceipt({ hash: txHash })
+    return txHash
+  }
+
+  async function processDue(): Promise<void> {
+    let ids: readonly Hex[]
+    try {
+      ids = await fetchDueScheduleIds()
+    } catch (err) {
+      metrics.lastError = err instanceof Error ? err.message : 'fetch_due_failed'
+      console.error('Failed to read due schedules:', err)
+      return
+    }
+
+    if (planExecution(ids) === 'none') {
+      console.log('No due schedules.')
+      return
+    }
+
+    console.log(`Found ${ids.length} due schedule(s); executing individually.`)
+    for (const id of ids) {
+      try {
+        const txHash = await executeDue(id)
+        recordSuccess()
+        console.log(`Executed ${id} → ${txHash}`)
+      } catch (err) {
+        metrics.lastError = err instanceof Error ? err.message : 'execution_failed'
+        console.error(`Execution failed for ${id}:`, err)
+      }
+    }
+  }
+
+  console.log('SherpaPay Worker starting (contract-driven execution)')
+  console.log(`Signer: ${account.address}`)
+  console.log(`Scheduler: ${SCHEDULER_ADDRESS}`)
+  console.log(`Cron: ${config.cronSchedule}`)
+
+  await processDue()
+
+  cron.schedule(config.cronSchedule, () => {
+    void processDue().catch((err: unknown) => {
+      console.error('Scheduled run failed:', err)
     })
   })
 
-  console.log('Worker is running. Press Ctrl+C to stop.')
+  console.log('Worker running. Press Ctrl+C to stop.')
 }
 
 main().catch((err: unknown) => {
-  console.error('Worker failed to start:', err)
+  console.error('Worker failed to start:', err instanceof Error ? err.message : err)
   process.exit(1)
 })
