@@ -10,6 +10,34 @@
  */
 export const SCHEDULER_ADDRESS = '0x135Ea0F5422fB1D4aDeaC8A205735498ffA5B933' as const
 
+/**
+ * Number of cycles a schedule is created for in the MVP. The contract has
+ * no maxExecutions concept; a finite schedule is enforced via `endTime`
+ * (= startTime + interval * cycles) and prefunded escrow (amount * cycles).
+ *
+ * Hardcoded for the MVP submission. Configurable later (intended range
+ * 1–100) by threading a user-chosen value through these helpers instead
+ * of the constant.
+ */
+export const DEFAULT_SCHEDULE_CYCLES = 12
+
+/** endTime that caps a schedule at `cycles` executions from `startTime`. */
+export function scheduleEndTime(
+  startTime: bigint,
+  interval: bigint,
+  cycles: number = DEFAULT_SCHEDULE_CYCLES,
+): bigint {
+  return startTime + interval * BigInt(cycles)
+}
+
+/** Total escrow to lock for `cycles` executions of `amount`. */
+export function scheduleEscrowTotal(
+  amount: bigint,
+  cycles: number = DEFAULT_SCHEDULE_CYCLES,
+): bigint {
+  return amount * BigInt(cycles)
+}
+
 export const schedulerAbi = [
   // ─── Write ─────────────────────────────────────────────────────────
   {

@@ -122,3 +122,4 @@ export function getAllTokenAddresses(chainId: number) {
 // ─── SherpaPay Contract ABIs ─────────────────────────────────────────
 
 export * from './scheduler-abi.js'
+export * from './scheduler-hooks.js'
