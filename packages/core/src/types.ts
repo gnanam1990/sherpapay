@@ -50,6 +50,14 @@ export type Intent =
       }
       readonly frequency: Frequency
     }
+  | {
+      readonly kind: 'batch'
+      /** 2+ recipients: aliases, 0x addresses, or +phone (resolved in UI). */
+      readonly recipients: readonly string[]
+      /** Amount sent to EACH recipient (total = amount × recipients.length). */
+      readonly amount: string
+      readonly token: TokenSymbol
+    }
   | { readonly kind: 'cancel'; readonly scheduleAlias: string }
   | { readonly kind: 'pause'; readonly scheduleAlias: string }
   | { readonly kind: 'resume'; readonly scheduleAlias: string }

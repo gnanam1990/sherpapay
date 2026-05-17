@@ -104,6 +104,40 @@ export function categoryForSchedule(
   return intervalSeconds >= WEEK_SECONDS ? 'subscription' : 'transfer'
 }
 
+const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/
+
+function normalizeRecipientToken(raw: string): string {
+  const t = raw.trim()
+  if (ADDRESS_RE.test(t)) return t // keep checksum case
+  const phone = normalizePhone(t)
+  if (/^\+\d{8,15}$/.test(phone)) return phone
+  return t.toLowerCase()
+}
+
+/**
+ * Recipients after "to" split on commas / "and" / "&", with a trailing
+ * "for ..." note stripped. Deduped case-insensitively (first form kept).
+ * Returns [] when there is no list.
+ */
+function parseRecipientList(str: string): string[] {
+  const m = str.match(/\bto\s+(.+)$/i)
+  if (!m?.[1]) return []
+  const tail = m[1].split(/\s+for\s+/i)[0] ?? ''
+  const parts = tail
+    .split(/\s*,\s*|\s+and\s+|\s*&\s*/i)
+    .map(normalizeRecipientToken)
+    .filter((t) => t.length > 0)
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const p of parts) {
+    const key = p.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(p)
+  }
+  return out
+}
+
 function parseFrequency(str: string): Frequency | undefined {
   const lower = str.toLowerCase()
 
@@ -209,6 +243,18 @@ export function parse(input: string): Intent {
         frequency,
         ...phoneTag,
         ...(category ? { category } : {}),
+      }
+    }
+
+    // Multi-recipient: 2+ deduped recipients with no frequency. Scheduled
+    // batches are intentionally out of scope (frequency wins above).
+    const list = parseRecipientList(trimmed)
+    if (list.length >= 2) {
+      return {
+        kind: 'batch',
+        recipients: list,
+        amount: amount ?? '0',
+        token: token ?? 'cUSD',
       }
     }
 
