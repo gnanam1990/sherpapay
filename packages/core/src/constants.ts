@@ -49,11 +49,16 @@ export const CELO_MAINNET_SHERPAPAY_CONTRACTS: SherpaPayContractAddresses = {
 
 // ─── Safety Limits ───────────────────────────────────────────────────
 
+// 1 token unit in 18-decimal base units. Used to author the USD-denominated
+// caps with exact bigint math — `BigInt(100000e18)` would silently lose
+// precision (1e23 is not exactly representable as a float64).
+const ONE_E18 = 10n ** 18n
+
 export const SAFETY_LIMITS = {
-  PER_TX_MAX: BigInt(500e18), // 500 cUSD
-  DAILY_MAX: BigInt(1000e18), // 1000 cUSD
-  MONTHLY_MAX: BigInt(10000e18), // 10000 cUSD
-  SCHEDULE_LIFETIME_MAX: BigInt(100000e18), // 100000 cUSD
+  PER_TX_MAX: 500n * ONE_E18, // 500 cUSD
+  DAILY_MAX: 1000n * ONE_E18, // 1000 cUSD
+  MONTHLY_MAX: 10000n * ONE_E18, // 10000 cUSD
+  SCHEDULE_LIFETIME_MAX: 100000n * ONE_E18, // 100000 cUSD
   MIN_INTERVAL_SECONDS: 3600, // 1 hour
   MAX_INTERVAL_SECONDS: 31536000, // 1 year
   MAX_SCHEDULE_DURATION_YEARS: 10,

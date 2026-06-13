@@ -134,6 +134,38 @@ describe('safety - amount limits', () => {
     const result = runSafetyChecks(intent, ctx)
     expect(result.checks.some((c) => c.name === 'amount-limits' && c.level === 'warn')).toBe(true)
   })
+
+  it('blocks USDT amount exceeding per-tx max (6-decimal token)', () => {
+    // 600 USDT is over the 500 cap. USDT has 6 decimals, so the human
+    // parser amount "600" must be scaled to 600e6 and still trip the cap.
+    const intent: Intent = {
+      kind: 'send',
+      recipient: 'mom',
+      amount: '600',
+      token: 'USDT',
+    }
+    const result = runSafetyChecks(intent, {
+      ...defaultContext,
+      userBalance: BigInt(10000e6),
+    })
+    expect(result.passed).toBe(false)
+    expect(result.checks.some((c) => c.name === 'amount-limits' && c.level === 'block')).toBe(true)
+  })
+
+  it('passes USDT amount under per-tx max (6-decimal token)', () => {
+    const intent: Intent = {
+      kind: 'send',
+      recipient: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+      amount: '100',
+      token: 'USDT',
+    }
+    const result = runSafetyChecks(intent, {
+      ...defaultContext,
+      userBalance: BigInt(10000e6),
+    })
+    expect(result.passed).toBe(true)
+    expect(result.checks.some((c) => c.name === 'amount-limits' && c.level === 'block')).toBe(false)
+  })
 })
 
 describe('safety - sanctions', () => {

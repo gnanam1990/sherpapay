@@ -1,5 +1,25 @@
-import type { Intent, SafetyContext, SafetyResult, SafetyCheck, SafetyLevel } from '@sherpapay/core'
-import { SAFETY_LIMITS, amountToWei, isValidAddress } from '@sherpapay/core'
+import type {
+  Intent,
+  SafetyContext,
+  SafetyResult,
+  SafetyCheck,
+  SafetyLevel,
+  TokenSymbol,
+} from '@sherpapay/core'
+import { SAFETY_LIMITS, TOKEN_DECIMALS, amountToWei, isValidAddress } from '@sherpapay/core'
+
+/**
+ * The SAFETY_LIMITS amount caps are authored in 18-decimal units (cUSD/cEUR
+ * scale). USDT on Celo uses 6 decimals, so a raw 18-decimal limit compared
+ * against a 6-decimal amount would never trigger — effectively disabling the
+ * per-tx / daily / monthly caps for USDT. Scale an 18-decimal limit down to
+ * the intent token's decimals so the comparison is apples-to-apples.
+ */
+function scaleLimitToToken(limit18: bigint, token: TokenSymbol): bigint {
+  const decimals = TOKEN_DECIMALS[token]
+  if (decimals >= 18) return limit18
+  return limit18 / 10n ** BigInt(18 - decimals)
+}
 
 function parseIntentAmount(intent: Extract<Intent, { amount: string }>): bigint | null {
   const amount = intent.amount.trim()
@@ -78,15 +98,21 @@ function checkAmountLimits(intent: Intent, context: SafetyContext): SafetyCheck[
     const amount = parseIntentAmount(intent)
     if (amount === null) return checks
 
-    if (amount > SAFETY_LIMITS.PER_TX_MAX) {
+    // Scale the 18-decimal limits to the token's decimals so caps apply to
+    // 6-decimal tokens (USDT) the same as 18-decimal ones (cUSD/cEUR).
+    const perTxMax = scaleLimitToToken(SAFETY_LIMITS.PER_TX_MAX, intent.token)
+    const dailyMax = scaleLimitToToken(SAFETY_LIMITS.DAILY_MAX, intent.token)
+    const monthlyMax = scaleLimitToToken(SAFETY_LIMITS.MONTHLY_MAX, intent.token)
+
+    if (amount > perTxMax) {
       checks.push({
         name: 'amount-limits',
         level: 'block',
-        message: `Amount exceeds per-tx max of ${SAFETY_LIMITS.PER_TX_MAX}`,
+        message: `Amount exceeds per-tx max of ${perTxMax}`,
       })
     }
 
-    if (context.dailySpent + amount > SAFETY_LIMITS.DAILY_MAX) {
+    if (context.dailySpent + amount > dailyMax) {
       checks.push({
         name: 'amount-limits',
         level: 'warn',
@@ -94,7 +120,7 @@ function checkAmountLimits(intent: Intent, context: SafetyContext): SafetyCheck[
       })
     }
 
-    if (context.monthlySpent + amount > SAFETY_LIMITS.MONTHLY_MAX) {
+    if (context.monthlySpent + amount > monthlyMax) {
       checks.push({
         name: 'amount-limits',
         level: 'warn',
