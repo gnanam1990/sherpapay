@@ -1,257 +1,252 @@
 # SherpaPay
 
-**Type once. Send forever.**
-
-Plain-English payments for MiniPay — schedule recurring stablecoin transfers on Celo with natural language.
+> Type a payment in plain English; SherpaPay parses it, safety-checks it, and sends or schedules it onchain on Celo.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Celo](https://img.shields.io/badge/Chain-Celo-35D07F)](https://celo.org)
-[![MiniPay](https://img.shields.io/badge/Surface-MiniPay-0052FF)](https://minipay.opera.com)
+[![CI](https://github.com/gnanam1990/sherpapay/actions/workflows/ci.yml/badge.svg)](https://github.com/gnanam1990/sherpapay/actions/workflows/ci.yml)
 
-## Problem
+## Overview
 
-MiniPay has 4M+ users in emerging markets sending stablecoin payments daily. But the UX requires manually entering long wallet addresses, setting up each payment, and remembering recipients across sessions. There's no native scheduling for recurring payments.
-
-Users in Nigeria, Kenya, Ghana, Mexico, Philippines, and India use MiniPay primarily for family remittances, bills, rent, and small savings — all done manually, every time.
-
-## Solution
-
-SherpaPay lets users type plain English to create scheduled payments:
-
-```
-"send 5 cUSD to mom every friday"
-→ SherpaPay parses intent, verifies safety, schedules onchain, executes automatically
-```
-
-## Why SherpaPay
-
-- **No addresses to retype.** Save "mom" once; every future command resolves it.
-- **Recurring, hands-off.** A schedule is funded once and a permissionless
-  on-chain worker executes each due payment — no app open, no reminders.
-- **Self-custodial.** Escrow lives in an audited-style Solidity contract on
-  Celo; cancel anytime and the unspent balance is refunded to you.
-- **Built for the markets MiniPay serves.** English/Swahili/Spanish/Hindi,
-  local-currency equivalents (₦/KSh/₹…), works in the MiniPay webview.
-- **Cheap.** A weekly 0.01 cUSD schedule for 12 cycles costs cents of CELO gas.
-
-## MiniPay Native Integration
-
-SherpaPay is built MiniPay-first. When the app is opened inside the MiniPay
-in-app browser it:
-
-- **Auto-detects MiniPay** — via `window.ethereum.isMiniPay`, the MiniPay
-  user agent, or a nested injected provider (`@sherpapay/minipay`).
-- **Auto-connects** — binds to MiniPay's injected wallet through the
-  EIP-6963 connector, so users skip the manual "connect wallet" step.
-- **Shows a "Connected via MiniPay" badge** so users can see the native
-  session is active.
-- **Sends Celo stablecoins from plain English** — live cUSD, cEUR, and
-  USDT transfers, parsed and safety-checked before signing.
-
-Non-MiniPay browsers are unaffected — the standard RainbowKit wallet
-picker still applies.
-
-### Testing in MiniPay
-
-MiniPay detection and auto-connect only run inside the MiniPay app (they
-cannot be exercised in a normal desktop browser).
-
-1. Open the MiniPay app (Android / iOS)
-2. Tap **Discover**
-3. Enter the deployed SherpaPay URL
-4. The app auto-connects — type a command such as
-   `send 0.01 cUSD to 0x...` to send instantly
+SherpaPay turns natural-language commands such as `send 5 cUSD to mom every friday`
+into Celo stablecoin transfers — either a one-off send or a prefunded, recurring
+schedule executed onchain. It is built for the MiniPay surface (mobile stablecoin
+users in emerging markets) who today re-enter long addresses and have no native
+recurring-payment option. The parser, multi-check safety layer, escrow contracts,
+and a cron worker that executes due payments are all implemented; this README
+reflects the current, honest state of the code.
 
 ## Features
 
-- **Natural-language input** — type a payment in plain English
-- **Direct sends** — cUSD / cEUR / USDT transfers on Celo
-- **Scheduled payments** — `schedulePayment` + prefunded escrow, executed
-  on-chain by a permissionless worker; pause / resume / cancel + refund
-- **Safety checks** — multi-ring validation before any signature
-- **MiniPay native** — auto-detect + auto-connect in the MiniPay webview
-- **Recipient aliases** — "mom" → `0x…`, per-wallet, on-device
-- **Local-currency equivalents** — ₦ / KSh / GH₵ / MX$ / ₱ / ₹ via CoinGecko
-- **i18n** — English, Kiswahili, Español, हिन्दी
-- **Transaction history** — native + token + schedule activity from Celoscan
-- **Savings vault** — contribute / withdraw against on-chain goals
+- **Natural-language input** — a deterministic parser turns plain English (with
+  spoken numbers and currency aliases) into a typed `Intent`.
+- **Direct sends** — cUSD / cEUR / USDT transfers on Celo.
+- **Scheduled payments** — `schedulePayment` plus prefunded escrow, executed
+  onchain by a permissionless worker; pause / resume / cancel with refund of the
+  unspent balance.
+- **Savings goals** — the `save …` command creates an onchain goal via the vault;
+  contribute and withdraw against it.
+- **Safety layer** — every intent runs through input validation, recipient
+  verification, amount caps (per-tx / daily / monthly + anomaly check), a
+  blocklist check, frequency validation, and a confirmation card before signing.
+- **MiniPay native** — auto-detects the MiniPay in-app browser and auto-connects
+  its injected wallet; standard wallets fall back to the RainbowKit picker.
+- **Recipient aliases** — map a name (e.g. "mom") to an address per wallet.
+- **i18n** — English, Kiswahili, Español, and हिन्दी message catalogs.
+- **Local-currency display** — show local-currency equivalents alongside amounts.
+- **Transaction history** — native, token, and schedule activity.
 
-## Roadmap
+Notes on maturity are in [Status](#status). Screenshots are tracked under
+`docs/screenshots/` and are not embedded until real images are committed.
 
-Honest status — what is shipped vs not.
+## Tech stack
 
-**Shipped**
-
-- [x] Natural-language parser + multi-ring safety
-- [x] Live cUSD/cEUR/USDT sends (mainnet, smoke-tested)
-- [x] On-chain scheduled payments — create, fund, pause/resume/cancel
-- [x] Contract-driven worker — real `executeDuePayment`/`executeBatch`
-      (mainnet smoke-tested; no faked executions anywhere)
-- [x] `/schedules` and `/goals` read live contract state
-- [x] MiniPay detection + auto-connect
-- [x] i18n (en/sw/es/hi) + local-currency display
-- [x] Per-wallet recipient aliases (on-device)
-- [x] Transaction history via Celoscan
-
-**Coming soon**
-
-- [ ] Create savings goals from a natural-language command
-      (the vault + `/goals` actions are live; the "save …" intent is
-      not yet wired to `createGoal`)
-- [ ] User-selectable display currency (locale-derived default for now)
-- [ ] Optional server sync for aliases/history (currently on-device only)
-- [ ] CI test matrix, issue templates, expanded coverage
-- [ ] Demo video
-
-## Screenshots
-
-> The UI uses the **Soft Glass** design system (mandatory light + dark).
-> Shots are captured separately and committed under `docs/screenshots/`
-> (see [`docs/screenshots/README.md`](docs/screenshots/README.md) for the
-> exact list). Not embedded here until the real images are added — no
-> placeholder or fabricated graphics.
-
-| Screen    | Light                                  | Dark                                  |
-| --------- | -------------------------------------- | ------------------------------------- |
-| Home      | `docs/screenshots/home-light.png`      | `docs/screenshots/home-dark.png`      |
-| Confirm   | `docs/screenshots/confirm-light.png`   | `docs/screenshots/confirm-dark.png`   |
-| Schedules | `docs/screenshots/schedules-light.png` | `docs/screenshots/schedules-dark.png` |
-| Goals     | `docs/screenshots/goals-light.png`     | `docs/screenshots/goals-dark.png`     |
-| History   | `docs/screenshots/history-light.png`   | `docs/screenshots/history-dark.png`   |
-| Settings  | `docs/screenshots/settings-light.png`  | `docs/screenshots/settings-dark.png`  |
-
-## Tech Stack
-
-| Layer           | Technology                          |
-| --------------- | ----------------------------------- |
-| Frontend        | Next.js 15, Tailwind CSS, shadcn/ui |
-| Backend         | Fastify, PostgreSQL                 |
-| Smart Contracts | Solidity 0.8.24, OpenZeppelin       |
-| Blockchain      | Celo (mainnet + Alfajores)          |
-| Build           | pnpm workspaces, Turborepo          |
-| Testing         | Vitest, Foundry (Forge)             |
-| Tooling         | TypeScript strict, ESLint, Prettier |
+- **Web:** Next.js 15, React 19, Tailwind CSS, wagmi, viem, RainbowKit,
+  TanStack Query, react-intl, Recharts.
+- **API:** Fastify 5 with CORS and rate-limit plugins, Zod, `pg` (PostgreSQL).
+- **Worker:** node-cron, viem, `pg`.
+- **Contracts:** Solidity 0.8.24, Foundry (Forge), OpenZeppelin.
+- **Chain:** Celo (mainnet + Alfajores testnet).
+- **Monorepo:** pnpm workspaces + Turborepo, TypeScript (strict), Vitest,
+  ESLint, Prettier, Husky + lint-staged, commitlint.
 
 ## Architecture
 
+A pnpm/Turborepo monorepo with three apps, nine shared packages, and the
+Solidity contracts.
+
 ```
-sherpapay/
-├── apps/
-│   ├── web/          # Next.js 15 frontend
-│   ├── api/          # Fastify backend
-│   └── worker/       # Cron daemon for executions
-├── packages/
-│   ├── core/         # Types, constants, errors
-│   ├── parser/       # NL → Intent
-│   ├── safety/       # 7 safety rings
-│   ├── celo/         # Celo chain integration
-│   ├── minipay/      # MiniPay SDK wrapper
-│   ├── scheduler/    # Recurring payment engine
-│   ├── memory/       # Postgres data layer
-│   ├── ui/           # Shared React components
-│   └── identity/     # Recipient resolution
-├── contracts/
-│   ├── src/          # SherpaPayScheduler + SherpaPayVault
-│   ├── test/         # 22+ contract tests
-│   └── script/       # Deployment scripts
-└── docs/
+apps/
+  web/        Next.js 15 frontend (parse → confirm → send/schedule, MiniPay-aware)
+  api/        Fastify API: /parse, /schedules, /aliases, /goals, /health
+  worker/     node-cron daemon that executes due payments onchain
+packages/
+  core/       Shared types, constants (incl. SAFETY_LIMITS), errors, helpers
+  parser/     Natural language → typed Intent
+  safety/     Safety checks run on every intent before signing
+  celo/       Celo chain integration + contract ABIs
+  minipay/    MiniPay detection / connector wrapper
+  scheduler/  Recurring-payment logic
+  memory/     PostgreSQL data layer + migrations
+  identity/   Recipient / alias resolution
+  ui/         Shared React components
+contracts/
+  src/        SherpaPayScheduler + SherpaPayVault
+  test/       Foundry tests
+  script/     Deployment scripts (testnet / mainnet)
+docs/         Deployment notes and screenshots
 ```
 
-## Smart Contracts
-
-### SherpaPayScheduler
-
-Manages scheduled recurring payments on Celo.
-
-- **Celo mainnet:** `0x135Ea0F5422fB1D4aDeaC8A205735498ffA5B933`
-- `schedulePayment()` — Create a new recurring payment
-- `fundSchedule()` — Add escrow for future executions
-- `executeDuePayment()` — Execute a payment that's due
-- `executeBatch()` — Execute multiple due payments
-- `pauseSchedule()` / `resumeSchedule()` / `cancelSchedule()`
-
-### SherpaPayVault
-
-Savings goals with auto-DCA.
-
-- **Celo mainnet:** `0x70A58169BF96587E55F500c4b5cb9d956Ef826ee`
-- `createGoal()` — Create a savings goal
-- `contribute()` — Add funds toward a goal
-- `withdraw()` — Withdraw when goal is achieved
-- `emergencyWithdraw()` — Early withdrawal with 2% penalty
-
-## Getting Started
+## Getting started
 
 ### Prerequisites
 
 - Node.js 20+
 - pnpm 9+
-- Foundry (for smart contracts)
+- [Foundry](https://book.getfoundry.sh/) (for the contracts)
+- PostgreSQL (a `docker-compose.yml` provides a local Postgres 16 instance)
 
 ### Installation
 
 ```bash
-git clone https://github.com/gnanam1990/sherpapay.git
+git clone --recurse-submodules https://github.com/gnanam1990/sherpapay.git
 cd sherpapay
 pnpm install
 ```
 
-### Development
+The contracts use git submodules (OpenZeppelin, forge-std). If you cloned
+without `--recurse-submodules`, run `git submodule update --init --recursive`
+or `cd contracts && forge install`.
+
+### Configuration
+
+Each service reads its own env file. Copy the `.env.example` next to it and fill
+in values — never commit real keys. Variable names only:
+
+**`apps/api/.env`**
+
+| Variable                 | Purpose                               |
+| ------------------------ | ------------------------------------- |
+| `DATABASE_URL`           | PostgreSQL connection string          |
+| `CELO_RPC_URL`           | Celo mainnet RPC endpoint             |
+| `CELO_ALFAJORES_RPC_URL` | Celo Alfajores (testnet) RPC endpoint |
+| `PORT`                   | API listen port                       |
+| `HOST`                   | API bind host                         |
+| `JWT_SECRET`             | Secret for future auth                |
+
+**`apps/worker/.env`**
+
+| Variable                     | Purpose                                   |
+| ---------------------------- | ----------------------------------------- |
+| `API_URL`                    | API base URL for fetching due schedules   |
+| `CRON_SCHEDULE`              | Cron expression (default `* * * * *`)     |
+| `CELO_RPC_URL`               | Celo RPC for submitting executions        |
+| `WORKER_PRIVATE_KEY`         | Key of the wallet that pays execution gas |
+| `SCHEDULER_CONTRACT_ADDRESS` | Deployed scheduler contract address       |
+| `MAX_RETRIES`                | Max retries for a failed execution        |
+| `LOG_LEVEL`                  | Log level                                 |
+
+**`contracts/.env`**
+
+| Variable                 | Purpose                                           |
+| ------------------------ | ------------------------------------------------- |
+| `CELO_ALFAJORES_RPC_URL` | Alfajores RPC for deploy / verify                 |
+| `CELO_MAINNET_RPC_URL`   | Mainnet RPC for deploy / verify                   |
+| `DEPLOYER_PRIVATE_KEY`   | Deployer key (use an encrypted account in prod)   |
+| `ETHERSCAN_API_KEY`      | Etherscan V2 key for Celoscan source verification |
+
+### Running
 
 ```bash
-# Start web app
-pnpm dev:web
+# Start a local Postgres (optional, for the API/worker)
+docker compose up -d
 
-# Start API server
-pnpm dev:api
+# Dev servers (run in separate terminals)
+pnpm dev:web       # Next.js web app
+pnpm dev:api       # Fastify API
+pnpm dev:worker    # cron worker
 
-# Run tests
-pnpm test
-
-# Typecheck
-pnpm typecheck
-
-# Build all packages
-pnpm build
+# Workspace tasks (via Turborepo)
+pnpm build         # build all packages
+pnpm typecheck     # TypeScript strict typecheck
+pnpm lint          # ESLint
+pnpm format        # Prettier write
 ```
 
-### Smart Contracts
+Apply database migrations from the memory package when needed:
+
+```bash
+pnpm --filter @sherpapay/memory dev:migrate
+```
+
+### Smart contracts
 
 ```bash
 cd contracts
-
-# Build
 forge build
-
-# Test
 forge test
 
 # Deploy to Alfajores (testnet)
 forge script script/DeployTestnet.s.sol --rpc-url alfajores --broadcast --verify
 
-# Deploy to Celo mainnet with an encrypted Foundry account
+# Deploy to Celo mainnet (encrypted Foundry account recommended)
 forge script script/DeployMainnet.s.sol:DeployMainnet \
-  --rpc-url https://forno.celo.org \
+  --rpc-url celo \
   --account sherpapay-deployer \
-  --broadcast
+  --broadcast --verify
 ```
 
-## Quality Gates
+The repo also exposes `pnpm deploy:testnet` and `pnpm deploy:mainnet` wrappers
+for the two scripts above.
 
-- TypeScript strict mode (no `any` types)
-- 22+ smart contract tests passing
-- ESLint + Prettier enforced
-- Conventional commits (commitlint)
-- Pre-commit hooks (husky + lint-staged)
+## Usage
 
-## Related Projects
+### Command flow
 
-- [Sherpa](https://sherpa-web.vercel.app) — Natural-language agent on Base (sibling project)
+```
+"send 5 cUSD to mom every friday"
+→ parser produces a typed Intent
+→ safety checks run (caps, recipient, blocklist, confirmation card)
+→ user confirms → onchain send or prefunded schedule
+```
+
+### API endpoints (Fastify, prefixed `/api`)
+
+| Method & path                 | Purpose                   |
+| ----------------------------- | ------------------------- |
+| `GET  /api/health`            | Liveness check            |
+| `POST /api/parse`             | Parse text into an Intent |
+| `POST /api/schedules`         | Create a schedule         |
+| `GET  /api/schedules/:userId` | List a user's schedules   |
+| `DELETE /api/schedules/:id`   | Cancel a schedule         |
+| `POST /api/aliases`           | Create a recipient alias  |
+| `GET  /api/aliases/:userId`   | List a user's aliases     |
+| `DELETE /api/aliases/:id`     | Delete an alias           |
+| `POST /api/goals` …           | Savings-goal endpoints    |
+
+### Safety caps
+
+Caps live in `packages/core` (`SAFETY_LIMITS`) and are enforced in
+`packages/safety` (limits are authored in 18-decimal units and scaled to each
+token's decimals, so they apply to 6-decimal USDT too):
+
+- Per-transaction max: 500
+- Daily max: 1000
+- Monthly max: 10000
+- Anomaly flag: amount > 3× the user's average
+- Schedule interval: between 1 hour and 1 year
+
+## Testing
+
+```bash
+pnpm test          # Vitest across all TS packages
+cd contracts && forge test   # 25 Foundry contract tests (scheduler + vault)
+```
+
+CI (`.github/workflows/ci.yml`) runs lint, typecheck, Vitest, and build for the
+TypeScript workspace; a Foundry job builds and tests the contracts; and a
+Slither job runs advisory static analysis.
+
+## Status
+
+MVP — running on Celo mainnet.
+
+- **Live:** the parser, the safety layer, one-off cUSD/cEUR/USDT sends, onchain
+  scheduled payments (create / fund / pause / resume / cancel), the cron worker
+  executing due payments, savings goals via the `save` command and the vault,
+  recipient aliases, i18n (en/sw/es/hi), and the MiniPay detect/auto-connect path.
+- **Contracts:** deployed and source-verified on Celo mainnet (2026-05-16).
+  Addresses are recorded in `docs/celo-mainnet-deployment.md`:
+  - `SherpaPayScheduler` — `0x135Ea0F5422fB1D4aDeaC8A205735498ffA5B933`
+  - `SherpaPayVault` — `0x70A58169BF96587E55F500c4b5cb9d956Ef826ee`
+- **Partial / not yet:** the safety simulation check is a placeholder (returns
+  no findings); display currency uses a locale-derived default rather than a
+  user picker; aliases and history are on-device with no server sync yet; and
+  screenshots are not yet committed.
+
+MiniPay detection and auto-connect only run inside the MiniPay app; they cannot
+be exercised from a desktop browser. To test there, open MiniPay → Discover,
+enter the deployed URL, and the app auto-connects.
 
 ## License
 
-MIT
-
----
-
-Built by [gnanam1990](https://github.com/gnanam1990) for Celo Proof of Ship (May 2026)
+MIT — see [LICENSE](LICENSE).
